@@ -58,7 +58,7 @@ export default function CreateVaultPage({ onVaultCreated }: CreateVaultPageProps
                 functionName: "createVault",
                 args: [pwHash],
             }, {
-                onSuccess: async (hash) => {
+                onSuccess: async (_hash) => {
                     toast({ title: "Transaction submitted", description: "Creating your QRYPTANK on-chain..." });
                 },
                 onError: (err) => {
