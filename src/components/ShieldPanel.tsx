@@ -22,7 +22,7 @@ export default function ShieldPanel({ vaultAddress, walletAddress, chainId }: Sh
     const [amount, setAmount] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [step, setStep] = useState<"input" | "approve" | "shield">("input");
+    const [_step, setStep] = useState<"input" | "approve" | "shield">("input");
 
     const isValidToken = tokenAddress.startsWith("0x") && tokenAddress.length === 42;
 
@@ -55,7 +55,7 @@ export default function ShieldPanel({ vaultAddress, walletAddress, chainId }: Sh
         query: { enabled: isValidToken },
     });
 
-    const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    const { data: allowance } = useReadContract({
         address: isValidToken ? tokenAddress as `0x${string}` : undefined,
         abi: ERC20_ABI,
         functionName: "allowance",
