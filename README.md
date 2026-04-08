@@ -1,5 +1,7 @@
 # Qryptum App
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-white.svg)](LICENSE)
+
 Frontend dApp for the Qryptum protocol, built with React, Vite, and TypeScript.
 
 ## What it does
@@ -20,7 +22,6 @@ Qryptum lets users shield ERC-20 tokens into their personal QRYPTANK vault, prot
 
 ```bash
 cp .env.example .env
-# fill in your values
 npm install
 npm run dev
 ```
@@ -51,4 +52,6 @@ npm run build
 
 ## License
 
-MIT
+[![License: MIT](https://img.shields.io/badge/License-MIT-white.svg)](LICENSE)
+
+Copyright (c) 2026 [wei-zuan](https://github.com/wei-zuan) — see [LICENSE](LICENSE) for full terms.
