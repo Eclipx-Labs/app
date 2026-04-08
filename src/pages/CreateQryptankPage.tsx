@@ -1,6 +1,4 @@
-import { useEffect, useRef } from "react";
-import { Link } from "wouter";
-import SharedNavBar from "@/components/SharedNavBar";
+import { useEffect } from "react";
 
 const CYAN = "#06b6d4";
 const PURPLE = "#7c3aed";
@@ -639,7 +637,6 @@ export default function CreateQryptankPage() {
 
     return (
         <div style={{ background: "#000", minHeight: "100vh", fontFamily: "'Inter', sans-serif", color: "#fff" }}>
-            <SharedNavBar />
             <HeroSection />
             <WhatSection />
             <DeploySection />
@@ -704,30 +701,3 @@ function ShieldIcon({ color, size }: { color: string; size: number }) {
     );
 }
 
-function LockIcon({ color, size }: { color: string; size: number }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-            <rect x="5" y="11" width="14" height="10" rx="2" fill={`${color}22`} stroke={color} strokeWidth="1.5" />
-            <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="12" cy="16" r="1.5" fill={color} />
-        </svg>
-    );
-}
-
-function KeyIcon({ color, size }: { color: string; size: number }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-            <circle cx="8" cy="8" r="4" fill={`${color}22`} stroke={color} strokeWidth="1.5" />
-            <path d="M12 12l8 8M16 16l2-2" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-function ChainIcon({ color, size }: { color: string; size: number }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-    );
-}
