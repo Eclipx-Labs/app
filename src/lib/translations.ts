@@ -31,16 +31,16 @@ export const translations = {
             subtitle: "Every layer of Qryptum is engineered for one purpose: making your assets unmovable without your proof.",
             items: [
                 {
-                    title: "QRYPTANK",
+                    title: "Qrypt-Safe",
                     description: "Your vault proof is cryptographically hashed before it leaves your browser. The blockchain stores only a fingerprint, never your secret.",
                 },
                 {
                     title: "Transfer Shield",
-                    description: "Direct wallet transfers are blocked at the contract level. Every move requires QRYPTANK vault proof verification. No exceptions.",
+                    description: "Direct wallet transfers are blocked at the contract level. Every move requires Qrypt-Safe vault proof verification. No exceptions.",
                 },
                 {
                     title: "qToken Representation",
-                    description: "Shielded assets appear as qTokens (qETH, qUSDT) in MetaMask. Your real tokens stay shielded inside your personal QRYPTANK.",
+                    description: "Shielded assets appear as qTokens (qETH, qUSDT) in MetaMask. Your real tokens stay shielded inside your personal Qrypt-Safe.",
                 },
                 {
                     title: "Anti-Frontrun Protection",
@@ -73,11 +73,11 @@ export const translations = {
                 },
                 {
                     step: "02",
-                    title: "Create Your QRYPTANK",
-                    headline: "Your personal on-chain QRYPTANK.",
-                    description: "Deploy a personal QRYPTANK smart contract to the Ethereum blockchain with a single click. Set a vault proof that only you know. Your QRYPTANK belongs to your address and no one else.",
+                    title: "Create Your Qrypt-Safe",
+                    headline: "Your personal on-chain Qrypt-Safe.",
+                    description: "Deploy a personal Qrypt-Safe smart contract to the Ethereum blockchain with a single click. Set a vault proof that only you know. Your Qrypt-Safe belongs to your address and no one else.",
                     points: [
-                        "One QRYPTANK per wallet, deployed to Ethereum",
+                        "One Qrypt-Safe per wallet, deployed to Ethereum",
                         "Vault proof is never stored anywhere in plain form",
                         "Full ownership, no admin keys",
                     ],
@@ -86,7 +86,7 @@ export const translations = {
                     step: "03",
                     title: "Shield and Transfer",
                     headline: "Move assets your way.",
-                    description: "Shield any ERC-20 token into your QRYPTANK and receive qTokens in your wallet. Transfer them to anyone using only your vault proof. Direct wallet transfers are permanently blocked.",
+                    description: "Shield any ERC-20 token into your Qrypt-Safe and receive qTokens in your wallet. Transfer them to anyone using only your vault proof. Direct wallet transfers are permanently blocked.",
                     points: [
                         "Receive qTokens instantly upon shielding",
                         "Transfer to any address with your vault proof",
@@ -98,16 +98,16 @@ export const translations = {
         security: {
             label: "Security Architecture",
             quote: "Even a compromised private key cannot move your tokens.",
-            description: "Qryptum requires a cryptographic QRYPTANK proof on every transaction, independent of your wallet key. Your QRYPTANK is a smart contract deployed to your address. Only you can access it.",
+            description: "Qryptum requires a cryptographic Qrypt-Safe proof on every transaction, independent of your wallet key. Your Qrypt-Safe is a smart contract deployed to your address. Only you can access it.",
             metrics: [
-                { label: "QRYPTANK Type", value: "Personal Smart Contract" },
+                { label: "Qrypt-Safe Type", value: "Personal Smart Contract" },
                 { label: "Vault Proof Storage", value: "Encrypted Hash Only" },
                 { label: "Emergency Delay", value: "180 Days" },
             ],
         },
         cta: {
             title: "Ready to shield your assets?",
-            subtitle: "Deploy your QRYPTANK on Ethereum. Your key, your proof, your tokens.",
+            subtitle: "Deploy your Qrypt-Safe on Ethereum. Your key, your proof, your tokens.",
             btn: "Launch App",
         },
         footer: {
