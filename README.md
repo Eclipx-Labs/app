@@ -6,7 +6,7 @@ Frontend dApp for the Qryptum protocol, built with React, Vite, and TypeScript.
 
 ## What it does
 
-Qryptum lets users shield ERC-20 tokens into their personal QRYPTANK vault, protected by a cryptographic vault proof. Shielded tokens become non-transferable qTokens that can only move via the Qryptum app with the correct vault proof.
+Qryptum lets users shield ERC-20 tokens into their personal Qrypt-Safe vault, protected by a cryptographic vault proof. Shielded tokens become non-transferable qTokens that can only move via the Qryptum app with the correct vault proof.
 
 ## Tech Stack
 
