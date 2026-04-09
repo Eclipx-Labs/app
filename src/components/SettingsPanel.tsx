@@ -56,7 +56,7 @@ export default function SettingsPanel({ vaultAddress, chainId }: SettingsPanelPr
             functionName: "changeVaultProof",
             args: [oldPassword, newPassword],
         }, {
-            onSuccess: () => toast({ title: "Vault proof updated", description: "Your QRYPTANK proof has been updated." }),
+            onSuccess: () => toast({ title: "Vault proof updated", description: "Your Qrypt-Safe proof has been updated." }),
             onError: (err) => toast({ title: "Failed to update vault proof", description: err.message, variant: "destructive" }),
         });
     };
@@ -77,7 +77,7 @@ export default function SettingsPanel({ vaultAddress, chainId }: SettingsPanelPr
             </div>
 
             <div className="glass rounded-2xl p-6 space-y-2">
-                <Label className="text-foreground font-semibold text-base">QRYPTANK Address</Label>
+                <Label className="text-foreground font-semibold text-base">Qrypt-Safe Address</Label>
                 <div className="flex items-center gap-2">
                     <code className="text-xs text-muted-foreground font-mono bg-muted rounded-lg px-3 py-2 flex-1 break-all">
                         {vaultAddress}
