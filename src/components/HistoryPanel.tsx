@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { HistoryIcon, ExternalLinkIcon, ShieldIcon, SendIcon, UnlockIcon } from "lucide-react";
+import {
+    HistoryIcon, ExternalLinkIcon,
+    ShieldIcon, SendIcon, UnlockIcon,
+    ArrowDownIcon, WalletIcon, RotateCcwIcon,
+    TicketIcon, ZapIcon, PackageIcon,
+} from "lucide-react";
 import { fetchTransactions } from "@/lib/api";
 
 interface HistoryPanelProps {
@@ -60,15 +65,102 @@ interface Transaction {
     createdAt: string;
 }
 
-function TxCard({ tx }: { tx: Transaction }) {
-    const icon = tx.type === "shield"
-        ? <ShieldIcon className="w-4 h-4 text-primary" />
-        : tx.type === "transfer"
-            ? <SendIcon className="w-4 h-4 text-blue-400" />
-            : <UnlockIcon className="w-4 h-4 text-yellow-400" />;
+type TxMeta = {
+    icon: React.ReactNode;
+    label: string;
+    color: string;
+    amountPrefix: string;
+    badge?: string;
+    badgeColor?: string;
+};
 
-    const label = tx.type === "shield" ? "Shielded" : tx.type === "transfer" ? "Transferred" : "Unshielded";
-    const color = tx.type === "shield" ? "text-primary" : tx.type === "transfer" ? "text-blue-400" : "text-yellow-400";
+function getTxMeta(type: string): TxMeta {
+    switch (type) {
+        case "shield":
+            return {
+                icon: <ShieldIcon className="w-4 h-4 text-primary" />,
+                label: "Shielded",
+                color: "text-primary",
+                amountPrefix: "",
+            };
+        case "unshield":
+            return {
+                icon: <UnlockIcon className="w-4 h-4 text-yellow-400" />,
+                label: "Unshielded",
+                color: "text-yellow-400",
+                amountPrefix: "s",
+            };
+        case "transfer":
+            return {
+                icon: <SendIcon className="w-4 h-4 text-blue-400" />,
+                label: "Transferred",
+                color: "text-blue-400",
+                amountPrefix: "s",
+            };
+        case "receive":
+            return {
+                icon: <ArrowDownIcon className="w-4 h-4 text-green-400" />,
+                label: "Received",
+                color: "text-green-400",
+                amountPrefix: "s",
+            };
+        case "fund":
+            return {
+                icon: <WalletIcon className="w-4 h-4 text-amber-400" />,
+                label: "Air Bag Funded",
+                color: "text-amber-400",
+                amountPrefix: "",
+                badge: "AIR BAG",
+                badgeColor: "bg-amber-500/20 text-amber-400",
+            };
+        case "reclaim":
+            return {
+                icon: <RotateCcwIcon className="w-4 h-4 text-orange-400" />,
+                label: "Reclaimed",
+                color: "text-orange-400",
+                amountPrefix: "",
+                badge: "AIR BAG",
+                badgeColor: "bg-amber-500/20 text-amber-400",
+            };
+        case "voucher":
+            return {
+                icon: <TicketIcon className="w-4 h-4 text-amber-400" />,
+                label: "Voucher Sent",
+                color: "text-amber-400",
+                amountPrefix: "",
+                badge: "QRYPT AIR",
+                badgeColor: "bg-amber-500/20 text-amber-400",
+            };
+        case "air-send":
+            return {
+                icon: <ZapIcon className="w-4 h-4 text-amber-400" />,
+                label: "Air Sent",
+                color: "text-amber-400",
+                amountPrefix: "",
+                badge: "QRYPT AIR",
+                badgeColor: "bg-amber-500/20 text-amber-400",
+            };
+        case "air-receive":
+            return {
+                icon: <PackageIcon className="w-4 h-4 text-green-400" />,
+                label: "Air Received",
+                color: "text-green-400",
+                amountPrefix: "",
+                badge: "QRYPT AIR",
+                badgeColor: "bg-amber-500/20 text-amber-400",
+            };
+        default:
+            return {
+                icon: <HistoryIcon className="w-4 h-4 text-muted-foreground" />,
+                label: type,
+                color: "text-muted-foreground",
+                amountPrefix: "",
+            };
+    }
+}
+
+function TxCard({ tx }: { tx: Transaction }) {
+    const meta = getTxMeta(tx.type);
 
     const etherscanBase = tx.networkId === 11155111
         ? "https://sepolia.etherscan.io/tx/"
@@ -82,12 +174,19 @@ function TxCard({ tx }: { tx: Transaction }) {
         <div className="glass rounded-xl p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                    {icon}
+                    {meta.icon}
                 </div>
                 <div>
-                    <p className={`text-sm font-medium ${color}`}>{label}</p>
+                    <div className="flex items-center gap-2">
+                        <p className={`text-sm font-medium ${meta.color}`}>{meta.label}</p>
+                        {meta.badge && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${meta.badgeColor}`}>
+                                {meta.badge}
+                            </span>
+                        )}
+                    </div>
                     <p className="text-foreground font-semibold">
-                        {tx.amount} {tx.type === "shield" ? "" : "s"}{tx.tokenSymbol}
+                        {tx.amount} {meta.amountPrefix}{tx.tokenSymbol}
                     </p>
                     <p className="text-xs text-muted-foreground">{date}</p>
                 </div>
