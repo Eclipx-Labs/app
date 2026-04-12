@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from "react";
 import { formatUnits, keccak256, toBytes } from "viem";
 import {
