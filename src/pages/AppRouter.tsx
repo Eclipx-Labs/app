@@ -11,6 +11,7 @@ const SepoliaVerifiedPage = lazy(() => import("./SepoliaVerifiedPage"));
 const SepoliaVerifiedV3Page = lazy(() => import("./SepoliaVerifiedV3Page"));
 const SepoliaVerifiedV5Page = lazy(() => import("./SepoliaVerifiedV5Page"));
 const SepoliaVerifiedV6Page = lazy(() => import("./SepoliaVerifiedV6Page"));
+const SepoliaVerifiedV1Page = lazy(() => import("./SepoliaVerifiedV1Page"));
 const PrivacyPage = lazy(() => import("./PrivacyPage"));
 const TermsPage = lazy(() => import("./TermsPage"));
 const QuantumDesignPage = lazy(() => import("./QuantumDesignPage"));
@@ -102,6 +103,7 @@ export default function AppRouter() {
             <Route path="/" component={LandingPage} />
             <Route path="/app" component={DashboardRoute} />
             <Route path="/sepolia-verified" component={SepoliaVerifiedPage} />
+            <Route path="/sepolia-verified-v1" component={SepoliaVerifiedV1Page} />
             <Route path="/sepolia-verified-v3" component={SepoliaVerifiedV3Page} />
             <Route path="/sepolia-verified-v5" component={SepoliaVerifiedV5Page} />
             <Route path="/sepolia-verified-v6" component={SepoliaVerifiedV6Page} />
