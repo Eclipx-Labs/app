@@ -51,7 +51,7 @@ const wasmDataUrlPlugin = {
       };
     });
     // Generic: patch any pkg-esm JS file that references _bg.wasm via new URL(...)
-    build.onLoad({ filter: /pkg-esm[/\\][^/\\]+\.js$/ }, (args) => {
+    build.onLoad({ filter: /pkg-esm[/\\][^/\\]+\.js$/ }, (args: any) => {
       const code = fs.readFileSync(args.path, "utf8");
       if (!code.includes("_bg.wasm")) return null as any;
       const patched = inlineWasmUrls(code, path.dirname(args.path));
