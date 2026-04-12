@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { translations } from "@/lib/translations";
 type SR = typeof translations.en.sepoliaRecord;
 
-/* ── Constants — pending redeployment from clean wallet ──────────── */
+/* ── Constants ──────────────────────────────────────────────────── */
 const FACTORY_V5  = "";
 const IMPL_V5     = "";
 const VAULT_A     = "";
@@ -17,7 +17,7 @@ const WALLET_B    = "";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 const ETHERSCAN   = "https://sepolia.etherscan.io";
 
-/* ── TX hashes — pending redeployment from clean wallet ─────── */
+/* ── TX hashes ───────────────────────────────────────────────── */
 const TX_APPROVE        = "";
 const TX_COMMIT         = "";
 const TX_REVEAL         = "";

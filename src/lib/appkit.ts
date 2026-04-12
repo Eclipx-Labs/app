@@ -62,7 +62,7 @@ if (projectId) {
 export const wagmiConfig = _wagmiConfig;
 export const appKitModal = _appKitModal;
 
-/** V5 factory addresses (historical — pending redeployment from clean wallet) */
+/** V5 factory addresses (historical) */
 export const SHIELD_FACTORY_ADDRESSES: Record<number, string> = {
     11155111: import.meta.env.VITE_SHIELD_FACTORY_V5_SEPOLIA || "",
     1: import.meta.env.VITE_SHIELD_FACTORY_MAINNET || "",

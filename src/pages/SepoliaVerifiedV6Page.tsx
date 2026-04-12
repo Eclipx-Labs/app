@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { translations } from "@/lib/translations";
 type SR6 = typeof translations.en.sepoliaRecord.v6;
 
-/* ── Constants — pending redeployment from clean wallet ──────────── */
+/* ── Constants ──────────────────────────────────────────────────── */
 const FACTORY_V6   = "";
 const IMPL_V6      = "";
 const FACTORY_V5   = "";

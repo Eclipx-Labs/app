@@ -64,7 +64,7 @@ export default function AbiAndAddressesPage() {
                     "// Sepolia Testnet (Chain ID 11155111)",
                     "// v6 -- active (OTP chain, airBudget isolation)",
                     "QryptSafe v6: pending deployment (see Deployed Addresses)",
-                    "// v5–v1 -- historical, pending redeployment from clean wallet",
+                    "// v5-v1 -- historical",
                     "",
                     "// PersonalQrypt-Safe addresses vary per wallet",
                     "const vault = await qryptSafe.getVault(walletAddress);",

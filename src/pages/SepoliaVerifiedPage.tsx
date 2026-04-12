@@ -5,7 +5,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { translations } from "@/lib/translations";
 type SR = typeof translations.en.sepoliaRecord;
 
-/* ── Constants — pending redeployment from clean wallet ──────────── */
+/* ── Constants ──────────────────────────────────────────────────── */
 const FACTORY_V3 = "";
 const VAULT_IMPL_V3 = "";
 const FACTORY_V2 = "";
@@ -17,7 +17,7 @@ const VAULT_A = "";
 const WALLET_A = "";
 const WALLET_B = "";
 
-/* ── TX hashes — pending redeployment from clean wallet ─────── */
+/* ── TX hashes ───────────────────────────────────────────────── */
 const TX_DEPLOY   = "";
 const TX_SHIELD   = "";
 const TX_COMMIT   = "";

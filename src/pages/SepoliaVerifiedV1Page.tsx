@@ -322,11 +322,11 @@ export default function SepoliaVerifiedV1Page() {
                             Next Record
                         </div>
                         <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
-                            QryptSafe V2: Decimal precision fix
+                            QryptSafe V2: Pausable removed
                         </div>
                     </div>
                     <a
-                        href="/sepolia-verified"
+                        href="/sepolia-verified-v2"
                         style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#fff", textDecoration: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)", borderRadius: 10, padding: "10px 20px" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.11)"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.07)"; }}
