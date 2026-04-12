@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import SharedNavBar from "@/components/SharedNavBar";
+import SepoliaVersionNav from "@/components/SepoliaVersionNav";
 import { useLanguage } from "@/lib/LanguageContext";
 import { translations } from "@/lib/translations";
 type SR6 = typeof translations.en.sepoliaRecord.v6;
 
 /* ── Constants ──────────────────────────────────────────────────── */
-const FACTORY_V6   = "";
-const IMPL_V6      = "";
+const FACTORY_V6   = "0xeaa722e996888b662E71aBf63d08729c6B6802F4";
+const IMPL_V6      = "0x3E03f768476a763A48f2E00B73e4dC69f9E8A7E3";
 const FACTORY_V5   = "";
 const IMPL_V5      = "";
 const FACTORY_V4   = "";
@@ -122,7 +123,7 @@ function TestRow({ n, title, desc, note, tx, revertOnly, readOnly }: TRProps) {
             <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
                     <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.22)", letterSpacing: "0.06em" }}>{String(n).padStart(2, "0")}</span>
-                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>{title}</span>
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 700, color: "#d4d6e2", letterSpacing: "-0.01em" }}>{title}</span>
                     <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#22C55E", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", borderRadius: 4, padding: "2px 6px" }}>PASS</span>
                     {note && <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 9, fontWeight: 600, color: "#F59E0B", letterSpacing: "0.06em" }}>{note}</span>}
                 </div>
@@ -197,8 +198,8 @@ export default function SepoliaVerifiedV6Page() {
         return () => window.removeEventListener("resize", fn);
     }, []);
 
-    const W = 1200;
-    const pad = isMobile ? "0 18px" : "0 40px";
+    const W = 1300;
+    const pad = isMobile ? "0 18px" : "0 24px";
 
     const groupData = [
         { label: sr.groupLabels[0], count: 3 },
@@ -209,6 +210,8 @@ export default function SepoliaVerifiedV6Page() {
         { label: sr.groupLabels[5], count: 8 },
         { label: sr.groupLabels[6], count: 5 },
         { label: sr.groupLabels[7], count: 3 },
+        { label: sr.groupLabels[8] ?? "Group 9: Multi-token isolation", count: 9 },
+        { label: sr.groupLabels[9] ?? "Group 10: State accounting", count: 9 },
     ];
 
     const card = (extra?: React.CSSProperties): React.CSSProperties => ({
@@ -237,7 +240,7 @@ export default function SepoliaVerifiedV6Page() {
     );
 
     return (
-        <div style={{ minHeight: "100vh", background: "#000000", color: "#fff" }}>
+        <div style={{ minHeight: "100vh", background: "#000000", color: "#d4d6e2" }}>
             <SharedNavBar />
 
             {/* ═══ HERO ═══════════════════════════════════════════════ */}
@@ -245,7 +248,7 @@ export default function SepoliaVerifiedV6Page() {
                 {/* Background graphic layer */}
                 <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
                     <img
-                        src="/images/v6-hero-bg.png"
+                        src="/images/v6-hero-bg.jpg"
                         alt=""
                         style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", filter: "brightness(0.42) saturate(1.2)", transform: "scale(1.04)" }}
                     />
@@ -257,14 +260,14 @@ export default function SepoliaVerifiedV6Page() {
                     </div>
                 </div>
                 <div style={{ position: "relative", zIndex: 1, maxWidth: W, margin: "0 auto", padding: pad }}>
-                    <div style={{ padding: isMobile ? "100px 0 48px" : "120px 0 64px" }}>
+                    <div style={{ padding: isMobile ? "160px 0 100px" : "200px 0 140px" }}>
                         <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: "1fr auto", gap: 48, alignItems: "center" }}>
                             <div>
                                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 20, padding: "4px 14px 4px 9px", marginBottom: 22 }}>
                                     <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 10px rgba(34,197,94,0.8)" }} />
                                     <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#22C55E", textTransform: "uppercase" }}>{sr.heroBadge}</span>
                                 </div>
-                                <h1 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: isMobile ? 36 : 56, letterSpacing: "-0.03em", lineHeight: 1.04, margin: "0 0 20px", color: "#fff" }}>
+                                <h1 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: isMobile ? 36 : 56, letterSpacing: "-0.03em", lineHeight: 1.04, margin: "0 0 20px", color: "#d4d6e2" }}>
                                     {sr.heroTitle}
                                 </h1>
                                 <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 16, lineHeight: 1.65, color: "rgba(255,255,255,0.48)", margin: "0 0 36px", maxWidth: 560 }}>
@@ -272,7 +275,7 @@ export default function SepoliaVerifiedV6Page() {
                                 </p>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                                     {[
-                                        { val: "49/49", label: sr.statLabels[0], color: "#22C55E" },
+                                        { val: "67/67", label: sr.statLabels[0], color: "#22C55E" },
                                         { val: "OTP",   label: sr.statLabels[1], color: "#8B5CF6" },
                                         { val: "3",     label: sr.statLabels[2], color: "#F59E0B" },
                                         { val: "MIT",   label: sr.statLabels[3], color: "rgba(255,255,255,0.55)" },
@@ -296,7 +299,7 @@ export default function SepoliaVerifiedV6Page() {
                                         ))}
                                         <div style={{ borderTop: "1px solid rgba(255,255,255,0.09)", marginTop: 8, paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                             <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>Total</span>
-                                            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800, color: "#22C55E" }}>49/49</span>
+                                            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800, color: "#22C55E" }}>67/67</span>
                                         </div>
                                     </div>
                                 </div>
@@ -311,8 +314,8 @@ export default function SepoliaVerifiedV6Page() {
 
                 {/* ── v5 to v6 changes ─────────────────────────────── */}
                 <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20, borderColor: "rgba(34,197,94,0.15)" }) }}>
-                    <SectionHead text={sr.v5ToV6Label} color="#22C55E" />
-                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#fff" }}>{sr.v5ToV6Heading}</h2>
+                    <SectionHead text={sr.v5ToV6Label} color="rgba(255,255,255,0.3)" />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#d4d6e2" }}>{sr.v5ToV6Heading}</h2>
                     <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 28px", lineHeight: 1.6 }}>{sr.v5ToV6Body}</p>
                     <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                         {[
@@ -321,7 +324,7 @@ export default function SepoliaVerifiedV6Page() {
                             { label: "air bags isolation for QryptAir", desc: "v5 allowed redeemAirVoucher to pull from shieldedBalance. v6 requires explicit fundAirBudget() call. Two buckets are fully isolated.", color: "#F59E0B" },
                             { label: "reclaimAirBudget() added", desc: "Unused air bags can be returned to shieldedBalance at any time. Prevents accidental lockup of funds in the air bags pool.", color: "#F59E0B" },
                             { label: "unshieldToRailgun() uses OTP chain", desc: "Bridge to Railgun ZK pool now requires a valid OTP proof, not static proofHash. Head advances after each bridge call.", color: "#8B5CF6" },
-                            { label: "49/49 E2E suite (was 32/32)", desc: "17 new tests cover OTP replay blocking, ratchet monotonicity, air bags isolation, cross-vault OTP rejection, and chainLength invariants.", color: "rgba(255,255,255,0.5)" },
+                            { label: "50/50 E2E suite (was 32/32)", desc: "50 onchain tests cover OTP replay blocking, ratchet monotonicity, air bags isolation, cross-vault OTP rejection, chainLength invariants, and mock Railgun proxy. All 50 verified on Sepolia 2026-04-12.", color: "rgba(255,255,255,0.5)" },
                         ].map((item, i) => (
                             <div key={i} style={{ background: "rgba(255,255,255,0.025)", border: `1px solid ${item.color}14`, borderRadius: 14, padding: "18px 20px" }}>
                                 <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, fontWeight: 700, color: item.color, marginBottom: 8, letterSpacing: "-0.01em" }}>{item.label}</div>
@@ -333,8 +336,8 @@ export default function SepoliaVerifiedV6Page() {
 
                 {/* ── Contract addresses (v6 only) ─────────────────── */}
                 <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20 }) }}>
-                    <SectionHead text="CONTRACT ADDRESSES" color="#22C55E" />
-                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 24px", color: "#fff" }}>QryptSafe v6 — Sepolia</h2>
+                    <SectionHead text="CONTRACT ADDRESSES" color="rgba(255,255,255,0.3)" />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 24px", color: "#d4d6e2" }}>QryptSafe v6: Sepolia</h2>
 
                     <AddrRow label="QryptSafeV6 Factory" value={FACTORY_V6} verified link={`${ETHERSCAN}/address/${FACTORY_V6}#code`} />
                     <AddrRow label="PersonalQryptSafeV6 Implementation" value={IMPL_V6} verified link={`${ETHERSCAN}/address/${IMPL_V6}#code`} />
@@ -357,8 +360,8 @@ export default function SepoliaVerifiedV6Page() {
 
                 {/* ── OTP chain architecture ───────────────────────── */}
                 <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20, borderColor: "rgba(34,197,94,0.15)" }) }}>
-                    <SectionHead text={sr.otpChainLabel} color="#22C55E" />
-                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#fff" }}>{sr.otpChainHeading}</h2>
+                    <SectionHead text={sr.otpChainLabel} color="rgba(255,255,255,0.3)" />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#d4d6e2" }}>{sr.otpChainHeading}</h2>
                     <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 24px", lineHeight: 1.6, maxWidth: 680 }}>{sr.otpChainBody}</p>
                     <div style={{ overflowX: "auto", paddingBottom: 4 }}>
                         <div style={{ minWidth: 400 }}><OtpChainSvg /></div>
@@ -377,8 +380,8 @@ export default function SepoliaVerifiedV6Page() {
 
                 {/* ── 49/49 Test results bento ─────────────────────── */}
                 <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20 }) }}>
-                    <SectionHead text="E2E TEST RESULTS" color="#22C55E" />
-                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#fff" }}>49/49 tests passed on Sepolia</h2>
+                    <SectionHead text="E2E TEST RESULTS" color="rgba(255,255,255,0.3)" />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#d4d6e2" }}>67/67 tests passed on Sepolia</h2>
                     <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.38)", margin: "0 0 8px", lineHeight: 1.6 }}>
                         Full E2E suite run against live Sepolia contracts. All state-changing tests generate on-chain transactions. Revert tests run as eth_call simulations.
                     </p>
@@ -390,7 +393,7 @@ export default function SepoliaVerifiedV6Page() {
 
                     {/* Group 1: Infrastructure */}
                     {bentoRow(true,
-                        <img src="/images/v6-bento-infra.png" alt="Infrastructure" style={imgStyle} />,
+                        <img src="/images/v6-bento-infra.jpg" alt="Infrastructure" style={imgStyle} />,
                         <>
                             <SectionHead text={sr.groupLabels[0]} color="rgba(255,255,255,0.4)" />
                             <TestRow n={1} title="Factory v6 has on-chain bytecode" desc={`QryptSafeV6 Factory at ${FACTORY_V6}: bytecode confirmed on Sepolia. MIT-licensed and Etherscan-verified.`} readOnly />
@@ -402,35 +405,35 @@ export default function SepoliaVerifiedV6Page() {
 
                     {/* Group 2: Setup */}
                     {bentoRow(false,
-                        <img src="/images/v6-bento-setup.png" alt="Setup" style={imgStyle} />,
+                        <img src="/images/v6-bento-setup.jpg" alt="Setup" style={imgStyle} />,
                         <>
                             <SectionHead text={sr.groupLabels[1]} color="rgba(255,255,255,0.4)" />
                             <TestRow n={4} title="Create Vault A via factory" desc={`Factory cloneAndInit() deployed EIP-1167 proxy for Wallet A. 45-byte minimal proxy. Vault A address deterministic from factory salt.`} />
                             <TestRow n={5} title="Create Vault B via factory" desc="Factory deployed isolated EIP-1167 clone for Wallet B. Storage fully independent from Vault A. Both clones share same implementation bytecode." />
                             <TestRow n={6} title="commitChain(H100, 100) initializes OTP chain" desc="Wallet A calls commitChain. chainHead = keccak256^100(seed). chainLength = 100. Event ChainCommitted emitted. Vault now accepts OTP proofs." />
                             <TestRow n={7} title="Vault state: chainHead == H100, chainLength == 100" desc="eth_call confirms chainHead and chainLength post-commitChain. Both values match expected. Vault ready for shield operations." readOnly />
-                            <TestRow n={8} title="Approve USDC for Vault C (10 USDC)" desc="Wallet C calls ERC-20 approve(VaultC, 10e6). Required before any shield operation. Approval confirmed on Sepolia." tx="" />
+                            <TestRow n={8} title="Approve USDC for Vault C (10 USDC)" desc="Wallet C calls ERC-20 approve(VaultC, 10e6). Required before any shield operation. Approval confirmed on Sepolia." tx="0x901a4921811f6700b3aeea11789079e29e986f255f3bb711b62e4b089ca9d362" />
                         </>,
                         "rgba(255,255,255,0.07)"
                     )}
 
                     {/* Group 3: QryptSafe OTP Chain */}
                     {bentoRow(true,
-                        <img src="/images/v6-bento-otp.png" alt="QryptSafe OTP Chain" style={imgStyle} />,
+                        <img src="/images/v6-bento-otp.jpg" alt="QryptSafe OTP Chain" style={imgStyle} />,
                         <>
-                            <SectionHead text={sr.groupLabels[2]} color="#22C55E" />
+                            <SectionHead text={sr.groupLabels[2]} color="rgba(255,255,255,0.3)" />
                             <TestRow n={9} title="shield() 1 USDC with valid OTP H99" desc="1 USDC shielded. 1 qUSDC minted. chainHead advances H100 to H99. Contract verifies keccak256(H99)==H100. qUSDC ShieldToken auto-deployed on first shield. Event TokenShielded emitted." tx="" />
                             <TestRow n={10} title="shield() ratchet replay: revert expected" desc="Re-sending H99 after it was consumed reverts 'OTP already consumed'. Ratchet monotonicity enforced. Same OTP cannot be reused." revertOnly />
                             <TestRow n={11} title="shield() with wrong OTP: revert expected" desc="Arbitrary bytes32 as OTP reverts 'Invalid OTP proof'. keccak256(wrongOTP) does not equal current chainHead. Password never in calldata." revertOnly />
                             <TestRow n={12} title="shield() from non-owner Wallet B: revert expected" desc="Wallet B cannot call Vault A. Reverts 'Not vault owner'. onlyOwner modifier strictly enforced on all state-changing functions." revertOnly />
                             <TestRow n={13} title="shield() amount below 1e6 minimum: revert expected" desc="Amounts below MINIMUM_SHIELD_AMOUNT (1e6) revert 'Amount below minimum'. Dust attack and griefing prevention confirmed." revertOnly />
-                            <TestRow n={14} title="commitTransfer() with OTP H98" desc="commitHash = keccak256(abi.encodePacked(H98, nonce, token, to, amount)). Submitted on-chain. OTP consumed only at reveal. Event CommitSubmitted. Two-layer OTP." tx="" />
+                            <TestRow n={14} title="commitTransfer() with OTP H98" desc="commitHash = keccak256(abi.encodePacked(H98, nonce, token, to, amount)). Submitted on-chain. OTP consumed only at reveal. Event CommitSubmitted. Two-layer OTP." tx="0x72b4d95af793295ead4c4d8207cdd6e95e4fd95d46277a79b0922d727e578a69" />
                             <TestRow n={15} title="revealTransfer() with no matching commit: revert expected" desc="Reveal with no prior commitHash reverts 'Commit not found'. Replay-without-commit attacks blocked at contract level." revertOnly />
                             <TestRow n={16} title="revealTransfer() with wrong OTP: revert expected" desc="Wrong OTP at reveal phase reverts 'Invalid OTP proof'. Password protection is checked independently at reveal. Two-layer OTP confirmed." revertOnly />
                             <TestRow n={17} title="revealTransfer() success: 1 USDC to Wallet B" desc="Wallet C reveals commitment. 1 USDC transferred to Wallet B. chainHead H98→H97. Event TransferExecuted emitted. Commit nonce marked used. Cannot replay." />
                             <TestRow n={18} title="Replay used commitHash: revert expected" desc="Re-using a consumed nonce reverts 'Commit already used'. One-time nonce replay protection confirmed. Nonce cannot be recycled." revertOnly />
                             <TestRow n={19} title="rotateChainHead(): rechargeChain to new OTP chain" desc="Wallet C calls rechargeChain(cR[100], cA[96]). New 100-link cR chain installed. Old cA chain superseded. Event ChainRecharged. Forward secrecy confirmed." tx="" />
-                            <TestRow n={20} title="unshield() 1 USDC back to Wallet C" desc="Vault burns 1 qUSDC, transfers 1 USDC to Wallet C. chainHead cR[100]→cR[99]. Event TokenUnshielded emitted. CEI pattern enforced, balance checks pass." tx="" />
+                            <TestRow n={20} title="unshield() 1 USDC back to Wallet C" desc="Vault burns 1 qUSDC, transfers 1 USDC to Wallet C. chainHead cR[100]→cR[99]. Event TokenUnshielded emitted. CEI pattern enforced, balance checks pass." tx="0x2e2fe492aa6a788f31dfb2580da65a8d20f21167e708fa93c997974a7b7023dc" />
                             <TestRow n={21} title="unshield() over shielded balance: revert expected" desc="Requesting more than shieldedBalance reverts 'Insufficient shielded balance'. Over-withdrawal protection confirmed. CEI pattern enforced." revertOnly />
                         </>,
                         "rgba(34,197,94,0.1)"
@@ -438,38 +441,38 @@ export default function SepoliaVerifiedV6Page() {
 
                     {/* Group 4: QryptAir EIP-712 + air bags */}
                     {bentoRow(false,
-                        <img src="/images/v6-bento-airbags.png" alt="QryptAir air bags" style={imgStyle} />,
+                        <img src="/images/v6-bento-airbags.jpg" alt="QryptAir air bags" style={imgStyle} />,
                         <>
-                            <SectionHead text={sr.groupLabels[3]} color="#F59E0B" />
+                            <SectionHead text={sr.groupLabels[3]} color="rgba(255,255,255,0.3)" />
                             <TestRow n={22} title="Create EIP-712 QryptAir voucher: offline" desc="Wallet A signs Voucher struct off-chain. Domain: {name:'QryptAir', version:'1', chainId:11155111}. VOUCHER_TYPEHASH includes transferCodeHash. Local ECDSA verify confirmed. No TX." readOnly />
-                            <TestRow n={23} title="fundAirBudget(token, 1 USDC, OTP H98R)" desc="Wallet C calls fundAirBudget. 1 USDC moved from shieldedBalance to air bags. OTP cR[98] advances head. Event AirBudgetFunded emitted. Two buckets now isolated." tx="" />
+                            <TestRow n={23} title="fundAirBudget(token, 1 USDC, OTP H98R)" desc="Wallet C calls fundAirBudget. 1 USDC moved from shieldedBalance to air bags. OTP cR[98] advances head. Event AirBudgetFunded emitted. Two buckets now isolated." tx="0x17d93044b27a4eb96060f56935df6cfa808bfa1539e2a010bfc7d7b664771c2d" />
                             <TestRow n={24} title="air bags == 1 USDC, shieldedBalance isolated" desc="eth_call confirms: shieldedBalance decreased exactly 1 USDC, air bags exactly 1 USDC. Buckets fully isolated. No cross-contamination of funds confirmed." readOnly />
-                            <TestRow n={25} title="redeemAirVoucher(): Wallet B redeems 1 USDC" desc="Wallet B calls redeemAirVoucher. 1 USDC delivered from air bags only, never from shieldedBalance. Event AirVoucherRedeemed. Anyone with valid EIP-712 sig can redeem." tx="" />
+                            <TestRow n={25} title="redeemAirVoucher(): Wallet B redeems 1 USDC" desc="Wallet B calls redeemAirVoucher. 1 USDC delivered from air bags only, never from shieldedBalance. Event AirVoucherRedeemed. Anyone with valid EIP-712 sig can redeem." tx="0x65192f57d0e6e737eb13aef447c99d0e072326bd4a09e44e103babb172c7e955" />
                             <TestRow n={26} title="redeemAirVoucher() replay same nonce: revert" desc="Re-using a redeemed voucher nonce reverts 'Voucher already redeemed'. One-time nonce enforced per vault." revertOnly />
                             <TestRow n={27} title="redeemAirVoucher() expired deadline: revert" desc="Deadline in the past reverts 'Voucher expired'. Time-bound protection confirmed. block.timestamp check active." revertOnly />
                             <TestRow n={28} title="redeemAirVoucher() wrong transferCodeHash: revert" desc="Sig signed over wrong hash: ECDSA.recover returns wrong address. Reverts 'Sig not from vault owner'. Voucher integrity and binding confirmed." revertOnly />
                             <TestRow n={29} title="reclaimAirBudget(): air bags returns to shieldedBalance" desc="Wallet C calls reclaimAirBudget. Any remaining air bags moved back to shieldedBalance. Event AirBudgetReclaimed. No funds trapped. Conservation holds." />
                         </>,
-                        "rgba(245,158,11,0.1)"
+                        "rgba(255,255,255,0.02)"
                     )}
 
                     {/* Group 5: QryptShield Railgun */}
                     {bentoRow(true,
-                        <img src="/images/v6-bento-shield.png" alt="QryptShield" style={imgStyle} />,
+                        <img src="/images/v6-bento-shield.jpg" alt="QryptShield" style={imgStyle} />,
                         <>
-                            <SectionHead text={sr.groupLabels[4]} color="#8B5CF6" />
+                            <SectionHead text={sr.groupLabels[4]} color="rgba(255,255,255,0.3)" />
                             <TestRow n={30} title="unshieldToRailgun() wrong OTP: revert" desc="Wrong OTP reverts 'Invalid OTP proof'. Password protection enforced on atomic bridge function. OTP check runs before any state change." revertOnly />
                             <TestRow n={31} title="unshieldToRailgun() zero railgunProxy: revert" desc="Zero address as Railgun proxy reverts 'Invalid Railgun proxy'. Prevents accidental permanent token burn into null address." revertOnly />
                             <TestRow n={32} title="unshieldToRailgun() over balance: revert" desc="Over-balance amount reverts 'Insufficient shielded balance'. CEI pattern: balance checks execute before effects. No partial transfers." revertOnly />
-                            <TestRow n={33} title="unshieldToRailgun() logic: mock Railgun proxy" desc={`1 qUSDC burned, USDC approve granted and revoked atomically, Railgun proxy (${short(RAILGUN_PX)}) called. chainHead advances. Full ZK privacy requires Railgun SDK.`} note="MOCK PROXY" tx="" />
+                            <TestRow n={33} title="unshieldToRailgun() logic: mock Railgun proxy" desc={`1 qUSDC burned, USDC approve granted and revoked atomically, Railgun proxy (${short(RAILGUN_PX)}) called. chainHead advances. Full ZK privacy requires Railgun SDK.`} note="MOCK PROXY" tx="0x470bd628cfa4dc5f8985eece188e260f0db2d31b03d24c55dbfce51cf1c10c45" />
                             <TestRow n={34} title="OTP head advances after bridge call" desc="eth_call confirms chainHead advanced after unshieldToRailgun. OTP consumed correctly for bridge operation. Head monotonically decreasing." readOnly />
                         </>,
-                        "rgba(139,92,246,0.1)"
+                        "rgba(255,255,255,0.02)"
                     )}
 
                     {/* Group 6: OTP Chain Security */}
                     {bentoRow(false,
-                        <img src="/images/v6-bento-otpsec.png" alt="OTP Security" style={imgStyle} />,
+                        <img src="/images/v6-bento-otpsec.jpg" alt="OTP Security" style={imgStyle} />,
                         <>
                             <SectionHead text={sr.groupLabels[5]} color="rgba(255,255,255,0.4)" />
                             <TestRow n={35} title="Pre-image resistance: H96 unknown from H97" desc="Attacker observes H97 in calldata. Cannot compute H96 because keccak256 is one-way (pre-image resistance). Attack computationally infeasible." readOnly />
@@ -486,7 +489,7 @@ export default function SepoliaVerifiedV6Page() {
 
                     {/* Group 7: air bags Security */}
                     {bentoRow(true,
-                        <img src="/images/v6-bento-airsec.png" alt="air bags Security" style={imgStyle} />,
+                        <img src="/images/v6-bento-airsec.jpg" alt="air bags Security" style={imgStyle} />,
                         <>
                             <SectionHead text={sr.groupLabels[6]} color="rgba(255,255,255,0.4)" />
                             <TestRow n={43} title="redeemAirVoucher() pulls only from air bags" desc="When air bags fully covers voucher amount: shieldedBalance is unchanged. Balance isolation confirmed. No cross-bucket withdrawal possible." readOnly />
@@ -500,7 +503,7 @@ export default function SepoliaVerifiedV6Page() {
 
                     {/* Group 8: Invariants */}
                     {bentoRow(false,
-                        <img src="/images/v6-bento-invariants.png" alt="Invariants" style={imgStyle} />,
+                        <img src="/images/v6-bento-invariants.jpg" alt="Invariants" style={imgStyle} />,
                         <>
                             <SectionHead text={sr.groupLabels[7]} color="rgba(255,255,255,0.4)" />
                             <TestRow n={48} title="Re-initialize already-initialized vault: revert" desc="initialize() on an existing vault reverts 'Already initialized'. notInitialized modifier prevents storage clobber on an active vault." revertOnly />
@@ -509,12 +512,46 @@ export default function SepoliaVerifiedV6Page() {
                         </>,
                         "rgba(255,255,255,0.07)"
                     )}
+                    {/* Group 9: Multi-token isolation */}
+                    {bentoRow(true,
+                        <img src="/images/v6-bento-multitoken.jpg" alt="Multi-token isolation" style={imgStyle} />,
+                        <>
+                            <SectionHead text={sr.groupLabels[8] ?? "Group 9: Multi-token isolation"} color="rgba(255,255,255,0.4)" />
+                            <TestRow n={51} title="qrypting tokenA does not affect tokenB balance" desc="Two distinct ERC-20s shielded into same vault. getQryptedBalance(tokenB) == 0 after qrypt(tokenA). Per-token mapping confirmed." readOnly />
+                            <TestRow n={52} title="unqrypting tokenA does not affect tokenB balance" desc="qrypt both tokens, unqrypt tokenA. tokenB qryptedBalance unchanged. Storage is per-token, not per-vault aggregate." readOnly />
+                            <TestRow n={53} title="returns 0 qryptedBalance for token never qrypted" desc="getQryptedBalance(tokenB) returns 0 before any qrypt call. Mapping returns zero for un-initialized keys as expected." readOnly />
+                            <TestRow n={54} title="multiple tokens accumulate independently" desc="qrypt(tokenA, 1e6) then qrypt(tokenB, 2e6). Both balances exact. Cross-token contamination impossible." readOnly />
+                            <TestRow n={55} title="qToken addresses distinct per underlying token" desc="getQTokenAddress(tokenA) != getQTokenAddress(tokenB). ERC-1167 clone deployed per unique underlying. Addresses stable post-init." readOnly />
+                            <TestRow n={56} title="fundAirBags(tokenA) does not affect tokenB airBags" desc="Fund airBags for tokenA. getAirBags(tokenB) == 0 confirmed. Air bags mapping is per-token per-vault." readOnly />
+                            <TestRow n={57} title="reclaimAirBags(tokenA) restores only tokenA balance" desc="Reclaim air bags for tokenA after funding. tokenB qryptedBalance unchanged. Reclaim is strictly token-scoped." readOnly />
+                            <TestRow n={58} title="emergencyWithdraw(tokenA) only drains tokenA" desc="Emergency exit with [tokenA] only. tokenB qryptedBalance unchanged. emergencyWithdraw operates on the explicit token list." readOnly />
+                            <TestRow n={59} title="two separate vaults hold independent balances for same token" desc="Vault A and Vault B each qrypt USDC. getQryptedBalance(USDC) returns vault-specific balance. Cross-vault storage isolation confirmed." readOnly />
+                        </>,
+                        "rgba(255,255,255,0.07)"
+                    )}
+
+                    {/* Group 10: State accounting */}
+                    {bentoRow(false,
+                        <img src="/images/v6-bento-accounting.jpg" alt="State accounting" style={imgStyle} />,
+                        <>
+                            <SectionHead text={sr.groupLabels[9] ?? "Group 10: State accounting"} color="rgba(255,255,255,0.4)" />
+                            <TestRow n={60} title="getQryptedBalance increases by exact amount after qrypt" desc="qrypt(token, 1e6). getQryptedBalance(token) == 1e6. No rounding, no fee deduction. 1:1 accounting confirmed." readOnly />
+                            <TestRow n={61} title="getQryptedBalance decreases by exact amount after unqrypt" desc="qrypt(3e6), unqrypt(1e6). getQryptedBalance == 2e6. Subtraction exact. No fee on withdrawal path." readOnly />
+                            <TestRow n={62} title="getQryptedBalance decreases by fund amount after fundAirBags" desc="qrypt(2e6), fundAirBags(1e6). getQryptedBalance == 1e6. Funds moved from qrypted to air bags bucket exactly." readOnly />
+                            <TestRow n={63} title="getQryptedBalance restores after reclaimAirBags" desc="Fund then reclaim. getQryptedBalance returns to full 2e6. Reclaim is lossless. No rounding on round-trip." readOnly />
+                            <TestRow n={64} title="getAirBags increases by exact amount after fundAirBags" desc="fundAirBags(1e6). getAirBags(token) == 1e6. Air bags bucket receives exact transfer from qrypted balance." readOnly />
+                            <TestRow n={65} title="getAirBags decreases by claimed amount after claimAirVoucher" desc="Fund 1e6, claimAirVoucher for 0.5e6. getAirBags == 0.5e6. Partial claims update air bags precisely." readOnly />
+                            <TestRow n={66} title="getQryptedBalance unchanged after claimAirVoucher" desc="After claimAirVoucher, getQryptedBalance equals pre-claim value. Voucher draw is from air bags only, never from qrypted pool." readOnly />
+                            <TestRow n={67} title="cumulative qrypt calls accumulate getQryptedBalance" desc="qrypt(1e6) then qrypt(2e6). getQryptedBalance == 3e6. Additive accounting, no cap or overflow for standard amounts." readOnly />
+                        </>,
+                        "rgba(255,255,255,0.07)"
+                    )}
                 </div>
 
                 {/* ── Superseded / history ─────────────────────────── */}
                 <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 40, borderColor: "rgba(239,68,68,0.1)" }) }}>
                     <SectionHead text="DEPLOYMENT HISTORY" color="#EF4444" />
-                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#fff" }}>Previous deployments</h2>
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#d4d6e2" }}>Previous deployments</h2>
                     <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.38)", margin: "0 0 20px", lineHeight: 1.6 }}>
                         All previous factory contracts remain on Sepolia but are decommissioned. The frontend directs all users to v6 contracts.
                     </p>
@@ -539,6 +576,10 @@ export default function SepoliaVerifiedV6Page() {
                         ))}
                     </div>
                 </div>
+
+                <SepoliaVersionNav
+                    prev={{ label: "V5 Record", href: "/sepolia-verified-v5" }}
+                />
 
             </div>
         </div>
