@@ -1,361 +1,268 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SharedNavBar from "@/components/SharedNavBar";
-import { Link } from "wouter";
+import { useLanguage } from "@/lib/LanguageContext";
+import { translations } from "@/lib/translations";
 
-const FACTORY_V1  = "0xd05F4fb3f24C7bF0cb482123186CF797E42CF17A";
-const IMPL_V1     = "0x5E398e1E0Ba28f9659013B1212f24b8B43d69393";
-const TX_DEPLOY   = "0xf240a2beec5303a6d83fdd8abfc585b608bb51bacb6185d11564cd98e4a4aeb5";
+type SR1 = typeof translations.en.sepoliaRecord.v1;
 
-const ETHERSCAN = "https://sepolia.etherscan.io";
-const PASS = "#22C55E";
+const FACTORY_V1 = "0xd05F4fb3f24C7bF0cb482123186CF797E42CF17A";
+const IMPL_V1    = "0x5E398e1E0Ba28f9659013B1212f24b8B43d69393";
+const TX_DEPLOY  = "0xf240a2beec5303a6d83fdd8abfc585b608bb51bacb6185d11564cd98e4a4aeb5";
+const ETHERSCAN  = "https://sepolia.etherscan.io";
+const PASS       = "#22C55E";
+const W          = 1200;
+const GITHUB_TEST = "https://github.com/Qryptumorg/contracts/blob/main/test/QryptSafeV1.test.js";
 
 const short = (v: string, h = 8, t = 6) => `${v.slice(0, h)}...${v.slice(-t)}`;
 
+/* ── Shared UI ──────────────────────────────────────────────────── */
 function CopySpan({ value, display }: { value: string; display?: string }) {
     const [ok, setOk] = useState(false);
-    const copy = () => {
-        navigator.clipboard.writeText(value).then(() => {
-            setOk(true);
-            setTimeout(() => setOk(false), 1600);
-        });
-    };
     return (
         <span
-            onClick={copy}
+            onClick={() => { navigator.clipboard.writeText(value).then(() => { setOk(true); setTimeout(() => setOk(false), 1600); }); }}
             title="Click to copy"
-            style={{
-                fontFamily: "'JetBrains Mono','Courier New',monospace",
-                fontSize: 12,
-                color: "rgba(255,255,255,0.65)",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                borderRadius: 6,
-                padding: "3px 10px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-            }}
-        >
+            style={{ fontFamily: "'JetBrains Mono','Courier New',monospace", fontSize: 12, color: "rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 6, padding: "3px 9px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
             {display ?? value}
             {ok
                 ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={PASS} strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
-                : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-            }
+                : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>}
         </span>
     );
 }
 
-function ExtLink({ href, label }: { href: string; label: string }) {
+function ExtLink({ href, children }: { href: string; children: React.ReactNode }) {
     return (
-        <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-                color: "rgba(255,255,255,0.45)",
-                fontSize: 12,
-                fontFamily: "'Inter',sans-serif",
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                borderBottom: "1px solid rgba(255,255,255,0.15)",
-                paddingBottom: 1,
-            }}
-        >
-            {label}
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
+        <a href={href} target="_blank" rel="noopener noreferrer"
+            style={{ color: "#627EEA", fontSize: 12, fontFamily: "'Inter',sans-serif", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = "underline"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = "none"; }}>
+            {children}
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
         </a>
     );
 }
 
-function Row({ label, addr, tx }: { label: string; addr?: string; tx?: string }) {
-    const val = addr || tx || "";
-    const link = tx
-        ? `${ETHERSCAN}/tx/${val}`
-        : `${ETHERSCAN}/address/${val}#code`;
+function AddrRow({ label, value, link, verified }: { label: string; value: string; link: string; verified?: boolean }) {
     return (
-        <div style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 16,
-            padding: "14px 0",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            flexWrap: "wrap",
-        }}>
-            <span style={{
-                fontFamily: "'Inter',sans-serif",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.35)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                width: 180,
-                flexShrink: 0,
-                paddingTop: 2,
-            }}>
-                {label}
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                {val
-                    ? <>
-                        <CopySpan value={val} display={short(val)} />
-                        <ExtLink href={link} label="Etherscan" />
-                      </>
-                    : <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.2)", fontStyle: "italic" }}>
-                        Pending
-                      </span>
-                }
+        <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.04em" }}>{label}</span>
+                {verified && (
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: PASS, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", borderRadius: 4, padding: "1px 6px" }}>VERIFIED MIT</span>
+                )}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+                <CopySpan value={value} display={short(value)} />
+                <ExtLink href={link}>Etherscan</ExtLink>
             </div>
         </div>
     );
 }
 
-/* ── Genesis Art: 12-block grid (one per test) ──────────────────── */
-function GenesisGrid() {
-    const tests = [
-        "Factory deployment",
-        "Salt verification",
-        "Vault creation",
-        "hasVault lookup",
-        "Duplicate vault reject",
-        "Shield ERC-20",
-        "18-decimal bug confirmed",
-        "Unshield ERC-20",
-        "Wrong password: shield",
-        "Wrong password: unshield",
-        "Non-owner blocked",
-        "Pause blocks creation",
-    ];
-
+function TxRow({ label, hash }: { label: string; hash: string }) {
     return (
-        <svg viewBox="0 0 320 160" style={{ width: "100%", height: "100%", display: "block" }}>
-            {tests.map((label, i) => {
-                const col = i % 4;
-                const row = Math.floor(i / 4);
-                const x = col * 80 + 8;
-                const y = row * 52 + 8;
-                return (
-                    <g key={i}>
-                        <rect
-                            x={x} y={y} width={66} height={40} rx={5}
-                            fill="rgba(255,255,255,0.03)"
-                            stroke="rgba(255,255,255,0.08)"
-                            strokeWidth="0.8"
-                        />
-                        <text
-                            x={x + 6} y={y + 12}
-                            fontFamily="'JetBrains Mono',monospace"
-                            fontSize="7"
-                            fill="rgba(255,255,255,0.25)"
-                        >
-                            {String(i + 1).padStart(2, "0")}
-                        </text>
-                        <circle cx={x + 56} cy={y + 10} r={4} fill="none" stroke={PASS} strokeWidth="1.2" strokeOpacity={0.8} />
-                        <path
-                            d={`M${x + 53} ${y + 10} L${x + 55.5} ${y + 12.5} L${x + 59} ${y + 8}`}
-                            fill="none" stroke={PASS} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" strokeOpacity={0.9}
-                        />
-                        <text
-                            x={x + 6} y={y + 32}
-                            fontFamily="'Inter',sans-serif"
-                            fontSize="5.5"
-                            fill="rgba(255,255,255,0.22)"
-                        >
-                            {label.length > 18 ? label.slice(0, 17) + "." : label}
-                        </text>
-                    </g>
-                );
-            })}
-        </svg>
+        <div style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ marginBottom: 6 }}>
+                <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.04em" }}>{label}</span>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+                <CopySpan value={hash} display={short(hash, 12, 6)} />
+                <ExtLink href={`${ETHERSCAN}/tx/${hash}`}>Etherscan</ExtLink>
+            </div>
+        </div>
     );
 }
 
-/* ── Page ─────────────────────────────────────────────────────────── */
-export default function SepoliaVerifiedV1Page() {
+function SectionHead({ text, color = PASS }: { text: string; color?: string }) {
     return (
-        <div style={{ minHeight: "100vh", background: "#000", color: "#fff", fontFamily: "'Inter',sans-serif" }}>
+        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color, marginBottom: 12, paddingTop: 6 }}>{text}</div>
+    );
+}
+
+interface TestRowProps { n: number; title: string; desc: string; isMobile: boolean }
+function TestRow({ n, title, desc, isMobile }: TestRowProps) {
+    return (
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "14px 0" : "16px 0", display: "flex", gap: 14, alignItems: "flex-start" }}>
+            <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: "50%", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2 }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={PASS} strokeWidth="2.8"><path d="M20 6L9 17l-5-5" /></svg>
+            </div>
+            <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.22)", letterSpacing: "0.06em" }}>{String(n).padStart(2, "0")}</span>
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>{title}</span>
+                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: PASS, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.22)", borderRadius: 4, padding: "2px 6px" }}>PASS</span>
+                </div>
+                <p style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.42)", lineHeight: 1.6 }}>{desc}</p>
+            </div>
+        </div>
+    );
+}
+
+/* ── Page ────────────────────────────────────────────────────────── */
+export default function SepoliaVerifiedV1Page() {
+    const { t } = useLanguage();
+    const sr = (t.sepoliaRecord as typeof translations.en.sepoliaRecord).v1 as SR1;
+
+    const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" ? window.innerWidth < 900 : false);
+    useEffect(() => {
+        const fn = () => setIsMobile(window.innerWidth < 900);
+        window.addEventListener("resize", fn);
+        return () => window.removeEventListener("resize", fn);
+    }, []);
+
+    const pad = isMobile ? "0 18px" : "0 40px";
+    const card = (extra?: React.CSSProperties): React.CSSProperties => ({
+        background: "rgba(255,255,255,0.025)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: 20,
+        ...extra,
+    });
+
+    return (
+        <div style={{ minHeight: "100vh", background: "#000000", color: "#fff" }}>
             <SharedNavBar />
 
-            <div style={{ maxWidth: 780, margin: "0 auto", padding: "64px 24px 80px" }}>
-
-                {/* Breadcrumb */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 32 }}>
-                    <Link href="/" style={{ color: "rgba(255,255,255,0.3)", fontSize: 12, textDecoration: "none" }}>Home</Link>
-                    <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 12 }}>/</span>
-                    <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>V1 Record</span>
+            {/* ═══ HERO ══════════════════════════════════════════════ */}
+            <div style={{ position: "relative", overflow: "hidden" }}>
+                {/* bg image */}
+                <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+                    <img
+                        src="/images/v1-hero-bg.png"
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", filter: "brightness(0.15) saturate(1.1)" }}
+                    />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.6) 70%, #000 100%)" }} />
                 </div>
 
-                {/* Header */}
-                <div style={{ marginBottom: 40 }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
-                        <span style={{
-                            fontFamily: "'Inter',sans-serif",
-                            fontSize: 10,
-                            fontWeight: 700,
-                            letterSpacing: "0.14em",
-                            textTransform: "uppercase",
-                            color: "rgba(255,255,255,0.4)",
-                            background: "rgba(255,255,255,0.05)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            borderRadius: 4,
-                            padding: "3px 10px",
-                        }}>
-                            V1 Historical
-                        </span>
-                        <span style={{
-                            fontFamily: "'Inter',sans-serif",
-                            fontSize: 10,
-                            fontWeight: 700,
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            color: "#EF4444",
-                            background: "rgba(239,68,68,0.08)",
-                            border: "1px solid rgba(239,68,68,0.2)",
-                            borderRadius: 4,
-                            padding: "3px 10px",
-                        }}>
-                            Superseded
-                        </span>
-                    </div>
-                    <h1 style={{
-                        fontSize: "clamp(28px, 5vw, 44px)",
-                        fontWeight: 900,
-                        letterSpacing: "-0.03em",
-                        lineHeight: 1.05,
-                        color: "#fff",
-                        margin: "0 0 14px",
-                    }}>
-                        QryptSafe V1
-                    </h1>
-                    <p style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, maxWidth: 560, margin: 0 }}>
-                        First deployment from clean wallet. Factory has owner + pause controls (removed in V3).
-                        ShieldToken hardcoded 18 decimals: USDC-backed qTokens displayed incorrect amounts in Etherscan.
-                        Superseded by V2.
-                    </p>
-                </div>
+                <div style={{ position: "relative", zIndex: 1, maxWidth: W, margin: "0 auto", padding: pad }}>
+                    <div style={{ padding: isMobile ? "100px 0 40px" : "110px 0 56px" }}>
+                        <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: "1fr 380px", gap: 56, alignItems: "center" }}>
+                            {/* Left */}
+                            <div>
+                                {/* Badge */}
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: 20, padding: "4px 14px 4px 9px", marginBottom: 22 }}>
+                                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#EF4444" }} />
+                                    <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "#EF4444", textTransform: "uppercase" }}>{sr.heroBadge}</span>
+                                </div>
 
-                {/* Stats row */}
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                    gap: 1,
-                    background: "rgba(255,255,255,0.06)",
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    marginBottom: 40,
-                    border: "1px solid rgba(255,255,255,0.07)",
-                }}>
-                    {[
-                        { val: "12 / 12", sub: "Tests passing" },
-                        { val: "EIP-1167", sub: "Clone pattern" },
-                        { val: "Ownable", sub: "Admin keys (V1)" },
-                        { val: "18 dec", sub: "qToken bug (fixed V2)" },
-                    ].map(({ val, sub }) => (
-                        <div key={sub} style={{ padding: "18px 20px", background: "rgba(0,0,0,0.5)" }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", marginBottom: 4 }}>{val}</div>
-                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: "0.04em" }}>{sub}</div>
+                                <h1 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 900, fontSize: isMobile ? 36 : 56, letterSpacing: "-0.03em", lineHeight: 1.04, margin: "0 0 20px", color: "#fff" }}>
+                                    {sr.heroTitle}
+                                </h1>
+
+                                <p style={{ fontFamily: "'Inter',sans-serif", fontSize: isMobile ? 14 : 16, color: "rgba(255,255,255,0.5)", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 540 }}>
+                                    {sr.heroBody}
+                                </p>
+
+                                {/* Stat boxes */}
+                                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                                    {[
+                                        { val: "12 / 12", label: sr.statLabels[0], color: PASS },
+                                        { val: "EIP-1167", label: sr.statLabels[1], color: "rgba(255,255,255,0.6)" },
+                                        { val: "Ownable", label: sr.statLabels[2], color: "#EF4444" },
+                                        { val: "MIT", label: sr.statLabels[3], color: "#06B6D4" },
+                                    ].map(s => (
+                                        <div key={s.label} style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${s.color}28`, borderRadius: 12, padding: "12px 18px", textAlign: "center", minWidth: 100 }}>
+                                            <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-0.03em", color: s.color }}>{s.val}</div>
+                                            <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>{s.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Right image */}
+                            {!isMobile && (
+                                <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 32px 80px rgba(0,0,0,0.7)" }}>
+                                    <img src="/images/v1-hero-right.png" alt="V1 EIP-1167 clone visualization" style={{ width: "100%", display: "block", aspectRatio: "4/3", objectFit: "cover" }} />
+                                </div>
+                            )}
                         </div>
-                    ))}
-                </div>
-
-                {/* Genesis grid art */}
-                <div style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 14,
-                    padding: "20px 16px",
-                    marginBottom: 40,
-                }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" }}>
-                            Test Record
-                        </span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: PASS, letterSpacing: "0.06em" }}>
-                            12 / 12 PASS
-                        </span>
                     </div>
-                    <div style={{ height: 165 }}>
-                        <GenesisGrid />
+                </div>
+            </div>
+
+            {/* ═══ CONTENT ════════════════════════════════════════════ */}
+            <div style={{ maxWidth: W, margin: "0 auto", padding: pad }}>
+
+                {/* ── What V1 introduced ── */}
+                <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20, borderColor: `${PASS}22` }) }}>
+                    <SectionHead text={sr.introLabel} color={PASS} />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 8px", color: "#fff" }}>{sr.introHeading}</h2>
+                    <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.42)", margin: "0 0 28px", lineHeight: 1.65 }}>{sr.introBody}</p>
+                    <div style={{ display: isMobile ? "block" : "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                        {sr.introItems.map((item, i) => (
+                            <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${i < 2 ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.1)"}`, borderRadius: 14, padding: "18px 20px", marginBottom: isMobile ? 12 : 0 }}>
+                                <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, fontWeight: 700, color: i < 2 ? "#EF4444" : PASS, marginBottom: 8, letterSpacing: "-0.01em" }}>{item.label}</div>
+                                <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.38)", lineHeight: 1.65 }}>{item.desc}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* Contract addresses */}
-                <div style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 14,
-                    padding: "6px 24px 6px",
-                    marginBottom: 32,
-                }}>
-                    <div style={{ padding: "14px 0 10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" }}>
-                            Sepolia Contracts
-                        </span>
-                    </div>
-                    <Row label="QryptSafeV1 (factory)" addr={FACTORY_V1} />
-                    <Row label="PersonalQryptSafeV1 (impl)" addr={IMPL_V1} />
-                    <Row label="Deploy TX" tx={TX_DEPLOY} />
+                {/* ── Contract addresses ── */}
+                <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20 }) }}>
+                    <SectionHead text={sr.addrLabel} color={PASS} />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 24px", color: "#fff" }}>{sr.addrHeading}</h2>
+                    <AddrRow label={sr.addrLabels.factory} value={FACTORY_V1} link={`${ETHERSCAN}/address/${FACTORY_V1}#code`} verified />
+                    <AddrRow label={sr.addrLabels.impl} value={IMPL_V1} link={`${ETHERSCAN}/address/${IMPL_V1}#code`} verified />
+                    <TxRow label={sr.addrLabels.deployTx} hash={TX_DEPLOY} />
                 </div>
 
-                {/* V1 known issue */}
-                <div style={{
-                    background: "rgba(239,68,68,0.04)",
-                    border: "1px solid rgba(239,68,68,0.12)",
-                    borderRadius: 12,
-                    padding: "18px 22px",
-                    marginBottom: 32,
-                }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#EF4444", textTransform: "uppercase", marginBottom: 8 }}>
-                        Known Issue
+                {/* ── 18-decimal bug ── */}
+                <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20, borderColor: "rgba(239,68,68,0.18)" }) }}>
+                    <SectionHead text={sr.bugLabel} color="#EF4444" />
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 8px", color: "#fff" }}>{sr.bugHeading}</h2>
+                    <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.42)", margin: "0 0 18px", lineHeight: 1.65 }}>{sr.bugBody}</p>
+                    <div style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.14)", borderRadius: 10, padding: "14px 18px" }}>
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "rgba(255,255,255,0.38)", lineHeight: 1.7 }}>{sr.bugExample}</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
-                        ShieldTokenV1 always returns 18 decimals. USDC (6 decimals) backed qTokens
-                        read as 0.000000000001 instead of 1.0 in Etherscan token trackers.
-                        On-chain balances are stored correctly. Fixed in V2 by reading decimals()
-                        from the underlying ERC-20 at deploy time.
-                    </p>
                 </div>
 
-                {/* Nav */}
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    <Link href="/" style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        fontFamily: "'Inter',sans-serif",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        color: "rgba(255,255,255,0.4)",
-                        textDecoration: "none",
-                        padding: "10px 20px",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 9,
-                    }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
-                        Back to home
-                    </Link>
-                    <Link href="/sepolia-verified" style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        fontFamily: "'Inter',sans-serif",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        color: "rgba(255,255,255,0.4)",
-                        textDecoration: "none",
-                        padding: "10px 20px",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 9,
-                    }}>
+                {/* ── Tests ── */}
+                <div style={{ ...card({ padding: isMobile ? "28px 18px" : "36px 40px", marginBottom: 20 }) }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 4 }}>
+                        <SectionHead text={sr.testResultsLabel} color={PASS} />
+                        <a
+                            href={GITHUB_TEST}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontFamily: "'Inter',sans-serif", fontSize: 12, fontWeight: 600, color: "#627EEA", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, border: "1px solid rgba(98,126,234,0.22)", borderRadius: 8, padding: "5px 12px" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(98,126,234,0.5)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(98,126,234,0.22)"; }}
+                        >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" /></svg>
+                            {sr.testFileLink}
+                        </a>
+                    </div>
+                    <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", margin: "0 0 6px", color: "#fff" }}>{sr.testResultsHeading}</h2>
+                    <p style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: "rgba(255,255,255,0.38)", margin: "0 0 24px", lineHeight: 1.6 }}>{sr.testResultsBody}</p>
+
+                    <div>
+                        {sr.tests.map((test, i) => (
+                            <TestRow key={i} n={i + 1} title={test.title} desc={test.desc} isMobile={isMobile} />
+                        ))}
+                    </div>
+                </div>
+
+                {/* ── Navigation to V2 ── */}
+                <div style={{ ...card({ padding: isMobile ? "22px 18px" : "26px 32px", marginBottom: 60, borderColor: "rgba(255,255,255,0.06)" }), display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                    <div>
+                        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", marginBottom: 4 }}>
+                            Next Record
+                        </div>
+                        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>
+                            QryptSafe V2: Decimal precision fix
+                        </div>
+                    </div>
+                    <a
+                        href="/sepolia-verified"
+                        style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#fff", textDecoration: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.13)", borderRadius: 10, padding: "10px 20px" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.11)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.07)"; }}
+                    >
                         V2 Record
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-                    </Link>
+                    </a>
                 </div>
             </div>
         </div>
