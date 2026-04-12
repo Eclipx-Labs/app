@@ -444,7 +444,7 @@ export default function QryptAirSenderPanel({ walletAddress, chainId, tokensWith
     }, [qrValue, toast]);
 
     const downloadQr = useCallback(() => {
-        const svg = document.getElementById("qryptair-qr") as SVGElement | null;
+        const svg = document.getElementById("qryptair-qr") as unknown as SVGElement | null;
         if (!svg) return;
         const xml = new XMLSerializer().serializeToString(svg);
         const url = URL.createObjectURL(new Blob([xml], { type: "image/svg+xml" }));
