@@ -35,7 +35,7 @@ const inlineWasmPlugin = {
 
 const port = Number(process.env.PORT ?? "3000");
 
-const basePath = process.env.BASE_PATH ?? "/app";
+const basePath = process.env.BASE_PATH ?? "/app/";
 
 // esbuild plugin: inlines .wasm imports as data URLs and patches pkg-esm JS wrappers
 // that use fetch(new URL('*_bg.wasm', import.meta.url)) so the pre-bundle resolves correctly
