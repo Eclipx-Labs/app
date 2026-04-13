@@ -64,6 +64,33 @@ jobs:
             return out;
           }
 
+          // Resolve subfolder CID from root CID using IPFS gateway dag-json
+          async function resolveFolderCid(rootCid, folderName) {
+            const gateways = [
+              'https://ipfs.io',
+              'https://dweb.link',
+              'https://w3s.link',
+            ];
+            for (const gw of gateways) {
+              try {
+                const r = await fetch(gw + '/ipfs/' + rootCid + '?format=dag-json', {
+                  headers: { Accept: 'application/vnd.ipld.dag-json' },
+                  signal: AbortSignal.timeout(8000),
+                });
+                if (r.ok) {
+                  const dag = await r.json();
+                  const links = dag.Links || dag.links || [];
+                  const link = links.find(l => (l.Name || l.name) === folderName);
+                  if (link) {
+                    const hash = link.Hash;
+                    return typeof hash === 'string' ? hash : hash['/'];
+                  }
+                }
+              } catch {}
+            }
+            return null;
+          }
+
           const jwt = process.env.PINATA_JWT;
           const sha = (process.env.COMMIT_SHA || 'unknown').slice(0, 7);
           const folder = 'qryptum-app-' + sha;
@@ -75,27 +102,21 @@ jobs:
           for (const { full, rel } of entries) {
             const bytes = fs.readFileSync(full);
             totalBytes += bytes.length;
-            // Exact Pinata SDK logic: path = folder + '/' + file.name
-            // (webkitRelativePath is empty in Node.js environment)
             const filePath = folder + '/' + rel;
             data.append('file', new File([bytes], filePath), filePath);
           }
 
-          // Pinata SDK uses cidVersion: 1 — NOT wrapWithDirectory
           data.append('pinataMetadata', JSON.stringify({ name: folder }));
           data.append('pinataOptions', JSON.stringify({ cidVersion: 1 }));
 
           console.log('Files  :', entries.length, '(source maps excluded)');
           console.log('Size   :', (totalBytes / 1024 / 1024).toFixed(2), 'MB');
           console.log('Folder :', folder);
-          console.log('Uploading to Pinata legacy endpoint...');
+          console.log('Uploading to Pinata...');
 
           const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
             method: 'POST',
-            headers: {
-              Authorization: 'Bearer ' + jwt,
-              Source: 'sdk/fileArray',
-            },
+            headers: { Authorization: 'Bearer ' + jwt, Source: 'sdk/fileArray' },
             body: data,
           });
 
@@ -111,19 +132,36 @@ jobs:
             process.exit(1);
           }
 
-          // Root CID contains folder/ — subdirectory CID is what we want for ENS
-          // To get the folder CID: ipfs ls <rootCID> → shows folder/ with its CID
-          // For now, print rootCID and the subfolder path for ENS
           const rootCid = result.IpfsHash;
+          console.log('Root CID  :', rootCid);
+
+          // Resolve the subfolder CID — this is what goes into ENS contenthash
+          console.log('Resolving folder CID from IPFS...');
+          const folderCid = await resolveFolderCid(rootCid, folder);
+
+          const ensCid = folderCid || rootCid;
+          const ensPath = folderCid ? '' : '/' + folder + '/';
+          const appUrl = folderCid
+            ? 'https://' + folderCid + '.ipfs.cf-ipfs.com/'
+            : 'https://' + rootCid + '.ipfs.cf-ipfs.com/' + folder + '/';
+
+          console.log('');
+          if (folderCid) {
+            console.log('Folder CID:', folderCid);
+            console.log('(Use this CID for ENS contenthash)');
+          } else {
+            console.log('WARNING: Could not resolve folder CID. Using root CID.');
+            console.log('App is at: ipfs://' + rootCid + '/' + folder + '/');
+          }
           console.log('');
           console.log('===== IPFS Upload Success =====');
-          console.log('Root CID :', rootCid);
-          console.log('App path : ipfs://' + rootCid + '/' + folder + '/');
-          console.log('GW URL   : https://' + rootCid + '.ipfs.cf-ipfs.com/' + folder + '/');
+          console.log('App URL   :', appUrl);
           console.log('');
-          console.log('For ENS — set contenthash to the folder sub-CID.');
-          console.log('Run: ipfs ls ' + rootCid + ' (to get folder CID)');
-          console.log('Or point ENS to: ipfs://' + rootCid);
+          console.log('Set ENS contenthash on qryptum.eth:');
+          console.log('  1. https://app.ens.domains/qryptum.eth');
+          console.log('  2. Edit Records -> Content Hash');
+          console.log('  3. Enter: ipfs://' + ensCid);
+          console.log('  4. Save (ETH gas required)');
           console.log('===============================');
 
           const summary = [
@@ -131,21 +169,19 @@ jobs:
             '',
             '| | |',
             '|---|---|',
-            '| **Root CID** | `' + rootCid + '` |',
             '| **Commit** | ' + sha + ' |',
-            '| **App path** | https://' + rootCid + '.ipfs.cf-ipfs.com/' + folder + '/ |',
+            folderCid ? '| **Folder CID** | `' + folderCid + '` |' : '| **Root CID** | `' + rootCid + '` |',
+            '| **App URL** | ' + appUrl + ' |',
             '',
-            '### Verify upload',
-            'Open: https://' + rootCid + '.ipfs.cf-ipfs.com/' + folder + '/',
-            '',
-            '### Set ENS contenthash',
-            '> Use the gateway URL above to confirm the app loads, then:',
+            '### Set contenthash on qryptum.eth',
             '1. https://app.ens.domains/qryptum.eth',
             '2. Edit Records -> Content Hash',
-            '3. Enter: `ipfs://' + rootCid + '`',
-            '4. Save (gas required)',
+            '3. Enter: `ipfs://' + ensCid + '`',
+            '4. Save (gas required on Ethereum mainnet)',
             '',
-            'Note: qryptum.eth.limo will serve ipfs://' + rootCid + '/' + folder + '/ — configure _dnslink if needed.',
+            folderCid
+              ? 'After ENS update: https://qryptum.eth.limo will serve index.html directly.'
+              : 'After ENS update: https://qryptum.eth.limo/' + folder + '/ will serve the app.',
           ].join('\n');
 
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
