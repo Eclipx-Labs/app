@@ -245,6 +245,7 @@ export default function QryptShieldPanel({
                         address: vaultAddress,
                         abi: PERSONAL_VAULT_V6_ABI,
                         functionName: "railgun",
+                        chain: undefined,
                         args: [
                             token.tokenAddress as `0x${string}`,
                             parsedAmount,
@@ -267,6 +268,7 @@ export default function QryptShieldPanel({
                         address: vaultAddress,
                         abi: PERSONAL_VAULT_ABI,
                         functionName: "unshieldToRailgun",
+                        chain: undefined,
                         args: [
                             token.tokenAddress as `0x${string}`,
                             parsedAmount,
@@ -341,7 +343,8 @@ export default function QryptShieldPanel({
                     data: unshieldTx.data as `0x${string}`,
                     value: BigInt(unshieldTx.value?.toString() ?? "0"),
                     gas: 2_000_000n,
-                });
+                    kzg: undefined,
+                } as Parameters<typeof walletClient.sendTransaction>[0]);
                 updateStep("deliver", { detail: "Delivering to recipient (direct)...", txHash: deliverHash });
             }
 
