@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useRef } from "react";
 import { useWalletClient, usePublicClient, useReadContract } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
@@ -245,7 +244,7 @@ export default function QryptShieldPanel({
                         account,
                         address: vaultAddress,
                         abi: PERSONAL_VAULT_V6_ABI,
-                        functionName: "unshieldToRailgun",
+                        functionName: "railgun",
                         args: [
                             token.tokenAddress as `0x${string}`,
                             parsedAmount,
@@ -329,7 +328,7 @@ export default function QryptShieldPanel({
                     chainId,
                 });
                 deliverHash = result.txHash as `0x${string}`;
-                updateStep("deliver", { detail: `Relayed via QryptumSigner — sender address hidden.`, txHash: deliverHash });
+                updateStep("deliver", { detail: `Relayed via QryptumSigner, sender address hidden.`, txHash: deliverHash });
             } catch (broadcastErr) {
                 const isFallback = (broadcastErr as Error & { fallback?: boolean }).fallback === true;
                 if (!isFallback) throw broadcastErr;
@@ -453,7 +452,7 @@ export default function QryptShieldPanel({
                                 width: "100%", padding: "10px 14px", borderRadius: 10,
                                 background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
                                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                                cursor: "pointer", color: "#fff",
+                                cursor: "pointer", color: "#d4d6e2",
                             }}
                         >
                             <span style={{ fontSize: 14, fontWeight: 600 }}>
@@ -463,7 +462,7 @@ export default function QryptShieldPanel({
                                         <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginLeft: 8 }}>
                                             {token.shieldedBalance !== undefined
                                                 ? `${formatUnits(token.shieldedBalance, token.decimals)} available`
-                                                : "—"}
+                                                : "-"}
                                         </span>
                                     </>
                                 ) : (
@@ -494,7 +493,7 @@ export default function QryptShieldPanel({
                                         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
                                             {t.shieldedBalance !== undefined
                                                 ? `${formatUnits(t.shieldedBalance, t.decimals)}`
-                                                : "—"}
+                                                : "-"}
                                         </span>
                                     </button>
                                 ))}
@@ -523,7 +522,7 @@ export default function QryptShieldPanel({
                         value={amount}
                         onChange={e => setAmount(e.target.value)}
                         placeholder="0.00"
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#d4d6e2" }}
                     />
                     {exceedsBalance && (
                         <p style={{ margin: "4px 0 0", fontSize: 11, color: "#f87171" }}>Exceeds your shielded balance.</p>
@@ -539,7 +538,7 @@ export default function QryptShieldPanel({
                         value={recipient}
                         onChange={e => setRecipient(e.target.value)}
                         placeholder="0x..."
-                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontFamily: "monospace", fontSize: 13 }}
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#d4d6e2", fontFamily: "monospace", fontSize: 13 }}
                     />
                     {recipientValid && (
                         <p style={{ margin: "4px 0 0", fontSize: 11, color: "#4ade80" }}>
@@ -579,7 +578,7 @@ export default function QryptShieldPanel({
                             placeholder="abc123"
                             maxLength={6}
                             autoComplete="new-password"
-                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontFamily: "monospace", textAlign: "center", letterSpacing: "0.2em", fontSize: 18, paddingRight: 40 }}
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#d4d6e2", fontFamily: "monospace", textAlign: "center", letterSpacing: "0.2em", fontSize: 18, paddingRight: 40 }}
                         />
                         <button
                             type="button"
@@ -616,7 +615,7 @@ export default function QryptShieldPanel({
                         width: "100%", padding: "14px 0", borderRadius: 12,
                         background: canSend && walletClient ? PRIMARY : "rgba(139,92,246,0.2)",
                         border: "none", cursor: canSend && walletClient ? "pointer" : "not-allowed",
-                        color: "#fff", fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em",
+                        color: "#d4d6e2", fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     }}
                 >
@@ -656,8 +655,8 @@ function Header() {
 function Summary({ token, amount, recipient }: { token: ShieldedToken | null; amount: string; recipient: string }) {
     const rows = [
         { label: "From", value: "Qrypt-Safe Vault", sub: token ? `q${token.tokenSymbol}` : "" },
-        { label: "Token", value: token ? `${amount} ${token.tokenSymbol}` : "—" },
-        { label: "To", value: recipient ? `${recipient.slice(0, 8)}...${recipient.slice(-6)}` : "—" },
+        { label: "Token", value: token ? `${amount} ${token.tokenSymbol}` : "-" },
+        { label: "To", value: recipient ? `${recipient.slice(0, 8)}...${recipient.slice(-6)}` : "-" },
     ];
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, marginBottom: 20 }}>
@@ -763,7 +762,7 @@ function DoneScreen({ txHash, chainId, amount, symbol, recipient, onReset }: {
             }}>
                 <ShieldIcon size={28} color={PRIMARY} />
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#fff", margin: "0 0 8px" }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#d4d6e2", margin: "0 0 8px" }}>
                 Delivered Privately
             </h3>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 4px" }}>
@@ -772,7 +771,7 @@ function DoneScreen({ txHash, chainId, amount, symbol, recipient, onReset }: {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", margin: "0 0 24px", lineHeight: 1.5 }}>
                 No on-chain record links your Qrypt-Safe to the recipient.
             </p>
-            <Button onClick={onReset} style={{ background: PRIMARY, border: "none", color: "#fff", marginBottom: 16 }}>
+            <Button onClick={onReset} style={{ background: PRIMARY, border: "none", color: "#d4d6e2", marginBottom: 16 }}>
                 New Transfer
             </Button>
             {txHash && (
