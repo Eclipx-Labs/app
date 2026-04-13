@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+const qryptumLogoUrl = `${import.meta.env.BASE_URL}qryptum-logo.png`;
 
 interface SplashScreenProps {
     onDone: () => void;
@@ -64,7 +65,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
             }}
         >
             <img
-                src={`${import.meta.env.BASE_URL}qryptum-logo.png`}
+                src={qryptumLogoUrl}
                 width={80}
                 height={80}
                 alt="Qryptum"

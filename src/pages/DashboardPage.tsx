@@ -26,6 +26,7 @@ import { fetchTransactions, fetchPortfolio } from "@/lib/api";
 import { PERSONAL_VAULT_ABI, PERSONAL_VAULT_V6_ABI, ERC20_ABI } from "@/lib/abi";
 import { SUPPORTED_CHAIN_IDS } from "@/lib/wagmi";
 import { hasAppKit, appKitModal } from "@/lib/appkit";
+const qryptumLogoUrl = `${import.meta.env.BASE_URL}qryptum-logo.png`;
 
 const TOKEN_COLORS = ["#60a5fa","#a78bfa","#fb923c","#facc15","#c084fc","#2dd4bf","#f472b6","#38bdf8","#f87171","#4ade80"];
 
@@ -621,7 +622,7 @@ function DesktopLayout(p: SharedProps) {
                 padding: "0 28px",
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={`${import.meta.env.BASE_URL}qryptum-logo.png`} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <img src={qryptumLogoUrl} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -708,7 +709,7 @@ function MobileLayout(p: SharedProps) {
                 background: "rgba(0,0,0,0.97)", position: "sticky", top: 0, zIndex: 20,
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={`${import.meta.env.BASE_URL}qryptum-logo.png`} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <img src={qryptumLogoUrl} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
 
