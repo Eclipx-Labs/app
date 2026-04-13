@@ -47,11 +47,7 @@ jobs:
 
       - name: Build
         env:
-          VITE_PROOF_SALT: ${{ secrets.VITE_PROOF_SALT }}
-          VITE_SHIELD_FACTORY_SEPOLIA: ${{ secrets.VITE_SHIELD_FACTORY_SEPOLIA }}
-          VITE_SHIELD_FACTORY_V6_SEPOLIA: ${{ secrets.VITE_SHIELD_FACTORY_V6_SEPOLIA }}
-          # QRYPTUM_SIGNER_PK: no VITE_ prefix — stays backend-only, never bundled into public JS
-          QRYPTUM_SIGNER_PK: ${{ secrets.QRYPTUM_SIGNER_PK }}
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
         run: pnpm run build
 
       - name: Setup Pages
@@ -89,7 +85,8 @@ jobs:
             - QryptAir: voucher-based air budget distribution
 
             ### Wallet Support
-            - MetaMask (primary), injected providers
+            - WalletConnect v2
+            - MetaMask, Coinbase Wallet, injected providers
 
             ### Active Contract (V6 Sepolia)
             - Factory: `0xeaa722e996888b662E71aBf63d08729c6B6802F4`
