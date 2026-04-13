@@ -93,6 +93,7 @@ interface SharedProps {
     networkName: string;
     balanceStr: string;
     hasVault: boolean;
+    isLoadingVault: boolean;
     vaultVersion: VaultVersion;
     vaultAddress: `0x${string}` | undefined;
     copied: boolean;
@@ -124,7 +125,7 @@ export default function DashboardPage() {
     const chainId = useChainId();
     const { disconnect } = useDisconnect();
     const { connect, connectors } = useConnect();
-    const { vaultAddress, hasVault, vaultVersion } = useVault();
+    const { vaultAddress, hasVault, vaultVersion, isLoadingVault } = useVault();
     const { data: balance } = useBalance({ address });
 
     const [activeModal, setActiveModal] = useState<ModalId | null>(null);
@@ -339,7 +340,7 @@ export default function DashboardPage() {
     const sharedProps: SharedProps = {
         activeModal, setActiveModal, closeModal,
         isConnected, address, shortAddress,
-        chainId, networkName, balanceStr, hasVault, vaultVersion, vaultAddress,
+        chainId, networkName, balanceStr, hasVault, isLoadingVault, vaultVersion, vaultAddress,
         copied, copyAddress,
         showConnectMenu, setShowConnectMenu,
         handleDisconnect: disconnect,
@@ -598,7 +599,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                         <ModalSettingsNoVault p={p} />
                     )}
                     {id === "upgrade-v6" && p.address && (
-                        <CreateQryptSafePage onVaultCreated={() => { p.closeModal(); p.refetchData(); }} />
+                        {p.isLoadingVault ? <PageLoader /> : <CreateQryptSafePage onVaultCreated={() => { p.closeModal(); p.refetchData(); }} />}
                     )}
                     {id === "upgrade-v6" && !p.address && (
                         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
@@ -631,7 +632,7 @@ function DesktopLayout(p: SharedProps) {
             </header>
 
             <main style={{ marginTop: 58, flex: 1, minHeight: "calc(100vh - 58px)" }}>
-                {p.isConnected && !p.hasVault
+                {p.isConnected && !p.isLoadingVault && !p.hasVault
                     ? <CreateQryptSafePage onVaultCreated={p.refetchData} />
                     : <DesktopDashboard {...p} />
                 }
@@ -757,7 +758,7 @@ function MobileLayout(p: SharedProps) {
             </header>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 90px" }}>
-                {p.isConnected && !p.hasVault
+                {p.isConnected && !p.isLoadingVault && !p.hasVault
                     ? <CreateQryptSafePage onVaultCreated={p.refetchData} />
                     : mobileNavTab === "profile"
                         ? <MobileProfileTab p={p} />
