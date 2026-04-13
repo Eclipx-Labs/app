@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Language } from "@/lib/translations";
 import { useLanguage } from "@/lib/LanguageContext";
-const qryptumLogoUrl = `${import.meta.env.BASE_URL}qryptum-logo.png`;
+import qryptumLogoUrl from '@/assets/qryptum-logo.png';
 
 /* ─── Nav menu keys and href lookup ─────────────────────────────────── */
 

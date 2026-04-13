@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SharedNavBar from "../components/SharedNavBar";
 import { useLanguage } from "@/lib/LanguageContext";
-const qryptumLogoUrl = `${import.meta.env.BASE_URL}qryptum-logo.png`;
+import qryptumLogoUrl from '@/assets/qryptum-logo.png';
 
 function useIsMobile() {
     const [m, setM] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);

@@ -26,7 +26,7 @@ import { fetchTransactions, fetchPortfolio } from "@/lib/api";
 import { PERSONAL_VAULT_ABI, PERSONAL_VAULT_V6_ABI, ERC20_ABI } from "@/lib/abi";
 import { SUPPORTED_CHAIN_IDS } from "@/lib/wagmi";
 import { hasAppKit, appKitModal } from "@/lib/appkit";
-const qryptumLogoUrl = `${import.meta.env.BASE_URL}qryptum-logo.png`;
+import qryptumLogoUrl from '@/assets/qryptum-logo.png';
 
 const TOKEN_COLORS = ["#60a5fa","#a78bfa","#fb923c","#facc15","#c084fc","#2dd4bf","#f472b6","#38bdf8","#f87171","#4ade80"];
 
