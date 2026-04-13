@@ -620,7 +620,7 @@ function DesktopLayout(p: SharedProps) {
                 padding: "0 28px",
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src="/qryptum-logo.png" alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <img src={import.meta.env.BASE_URL + 'qryptum-logo.png'} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: "#fff", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -707,7 +707,7 @@ function MobileLayout(p: SharedProps) {
                 background: "rgba(0,0,0,0.97)", position: "sticky", top: 0, zIndex: 20,
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src="/qryptum-logo.png" alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <img src={import.meta.env.BASE_URL + 'qryptum-logo.png'} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: "#fff", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
 
