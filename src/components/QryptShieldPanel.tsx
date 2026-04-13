@@ -313,48 +313,23 @@ export default function QryptShieldPanel({
             stepDone("proof");
 
             // ── STEP 5: Deliver via QryptumSigner (private broadcaster) ────
-            // Try our server-side broadcaster first: QryptumSigner submits the
-            // TX so Wallet A does NOT appear as `from` on Etherscan.
-            // If broadcaster is unavailable, fall back to direct wallet submit
-            // with a visible warning.
-            stepActive("deliver", "Routing via private broadcaster...");
+            // QryptumSigner submits the TX so Wallet A does NOT appear as
+            // `from` on Etherscan. NO fallback — broadcaster is mandatory.
+            stepActive("deliver", "Routing via QryptumSigner...");
 
-            let deliverHash: `0x${string}`;
-            let usedFallback = false;
+            const broadcastResult = await broadcastUnshieldTx({
+                to: unshieldTx.to,
+                data: unshieldTx.data as string,
+                value: unshieldTx.value?.toString() ?? "0",
+                chainId,
+            });
 
-            try {
-                const result = await broadcastUnshieldTx({
-                    to: unshieldTx.to,
-                    data: unshieldTx.data as string,
-                    value: unshieldTx.value?.toString() ?? "0",
-                    chainId,
-                });
-                deliverHash = result.txHash as `0x${string}`;
-                updateStep("deliver", { detail: `Relayed via QryptumSigner, sender address hidden.`, txHash: deliverHash });
-            } catch (broadcastErr) {
-                const isFallback = (broadcastErr as Error & { fallback?: boolean }).fallback === true;
-                if (!isFallback) throw broadcastErr;
-
-                usedFallback = true;
-                updateStep("deliver", { detail: "Private broadcaster unavailable. Confirm in your wallet (sender address visible)..." });
-                deliverHash = await walletClient.sendTransaction({
-                    account,
-                    to: unshieldTx.to as `0x${string}`,
-                    data: unshieldTx.data as `0x${string}`,
-                    value: BigInt(unshieldTx.value?.toString() ?? "0"),
-                    gas: 2_000_000n,
-                    kzg: undefined,
-                } as unknown as Parameters<typeof walletClient.sendTransaction>[0]);
-                updateStep("deliver", { detail: "Delivering to recipient (direct)...", txHash: deliverHash });
-            }
+            const deliverHash = broadcastResult.txHash as `0x${string}`;
+            updateStep("deliver", { detail: `Relayed via QryptumSigner — sender address hidden.`, txHash: deliverHash });
 
             const deliverReceipt = await publicClient.waitForTransactionReceipt({ hash: deliverHash });
             if (deliverReceipt.status === "reverted") throw new Error(`Unshield transaction reverted on-chain (Invalid Snark Proof or gas too low). TX: ${deliverHash}`);
             stepDone("deliver", deliverHash);
-
-            if (usedFallback) {
-                updateStep("deliver", { detail: "Done (fallback mode: sender address visible on-chain)", txHash: deliverHash });
-            }
 
             try {
                 await recordTransaction({
