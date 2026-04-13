@@ -1,5 +1,6 @@
 import { keccak256, toBytes, encodePacked, toHex } from "viem";
 import type { PublicClient } from "viem";
+import { generateH0Api } from "@/lib/api";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -63,39 +64,15 @@ export function buildCommitHash(
 // ── V6 OTP Chain: key derivation ─────────────────────────────────────────────
 
 /**
- * Derive H0 from the vault proof using PBKDF2-SHA256 with 200,000 iterations.
- * Salt = vaultAddress (lowercase) + VITE_PROOF_SALT.
- * This is intentionally slow (~2s) to make brute-force of 17.5M combinations impractical.
+ * Derive H0 from the vault proof via the Railway API (server-side PBKDF2-SHA256, 200k iterations).
+ * PROOF_SALT never reaches the frontend — it lives only in the Railway environment.
  * H0 is never submitted to the blockchain during normal operations -- only during rechargeChain.
  */
 export async function generateH0(
     vaultProof: string,
     vaultAddress: string
 ): Promise<`0x${string}`> {
-    const proofSalt = (import.meta.env.VITE_PROOF_SALT as string | undefined) ?? "";
-    const saltStr = vaultAddress.toLowerCase() + proofSalt;
-    const salt = new TextEncoder().encode(saltStr);
-    const keyData = new TextEncoder().encode(vaultProof);
-
-    const keyMaterial = await crypto.subtle.importKey(
-        "raw",
-        keyData,
-        "PBKDF2",
-        false,
-        ["deriveBits"]
-    );
-
-    const bits = await crypto.subtle.deriveBits(
-        { name: "PBKDF2", hash: "SHA-256", salt, iterations: 200_000 },
-        keyMaterial,
-        256
-    );
-
-    const bytes = new Uint8Array(bits);
-    const hex = Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    return `0x${hex}` as `0x${string}`;
+    return generateH0Api(vaultProof, vaultAddress);
 }
 
 /**
