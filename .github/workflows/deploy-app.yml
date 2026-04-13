@@ -62,6 +62,11 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Configure git author
+        run: |
+          git config user.name "wei-zuan"
+          git config user.email "269530115+wei-zuan@users.noreply.github.com"
+
       - name: Generate release tag
         id: tag
         run: |
