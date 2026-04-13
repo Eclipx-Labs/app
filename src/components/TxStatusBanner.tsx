@@ -100,8 +100,12 @@ function TxToast({ entry, onDismiss }: { entry: TxEntry; onDismiss: () => void }
                     fontSize: 11, color: "rgba(255,255,255,0.45)",
                     display: "flex", alignItems: "center", gap: 4,
                 }}>
-                    <span style={{ color: accentColor, fontWeight: 600 }}>{label}</span>
-                    <span style={{ opacity: 0.5 }}>·</span>
+                    {status !== "pending" && (
+                        <>
+                            <span style={{ color: accentColor, fontWeight: 600 }}>{label}</span>
+                            <span style={{ opacity: 0.5 }}>·</span>
+                        </>
+                    )}
                     <a
                         href={SEPOLIA_EXPLORER + entry.hash}
                         target="_blank"
