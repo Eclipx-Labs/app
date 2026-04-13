@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount, useChainId, useReadContract } from "wagmi";
 import { SHIELD_FACTORY_ADDRESSES, SHIELD_FACTORY_V6_ADDRESSES } from "@/lib/wagmi";
 import { SHIELD_FACTORY_ABI, SHIELD_FACTORY_V6_ABI } from "@/lib/abi";
+import { fetchVault } from "@/lib/api";
 
 export type VaultVersion = "v5" | "v6" | null;
 
@@ -42,7 +43,7 @@ export function useVault() {
     const { data: hasV5Vault, refetch: refetchV5 } = useReadContract({
         address: v5FactoryAddress,
         abi: SHIELD_FACTORY_ABI,
-        functionName: "hasQryptSafe",
+        functionName: "hasVault",
         args: address ? [address] : undefined,
         query: {
             enabled: !!address && !!v5FactoryAddress,
@@ -56,14 +57,19 @@ export function useVault() {
     const { data: v5VaultAddress, refetch: refetchV5Addr } = useReadContract({
         address: v5FactoryAddress,
         abi: SHIELD_FACTORY_ABI,
-        functionName: "getQryptSafe",
+        functionName: "getVault",
         args: address ? [address] : undefined,
         query: {
             enabled: !!address && !!v5FactoryAddress && hasV5Vault === true && hasV6Vault !== true,
             refetchInterval: 30_000,
         },
     });
-    const vaultRecord = null;
+
+    const { data: vaultRecord } = useQuery({
+        queryKey: ["vault", address],
+        queryFn: () => fetchVault(address!),
+        enabled: !!address && isConnected,
+    });
 
     // V6 takes priority: if the user has a V6 vault, use it
     const hasVault = hasV6Vault === true || hasV5Vault === true;

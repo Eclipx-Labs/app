@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBlockNumber } from "wagmi";
 import { parseUnits } from "viem";
@@ -84,7 +83,7 @@ export default function TransferPanel({ vaultAddress, walletAddress, chainId, va
     const { data: shieldedBalance } = useReadContract({
         address: vaultAddress,
         abi: vaultAbi,
-        functionName: "getQryptedBalance",
+        functionName: (isV6 ? "getQryptedBalance" : "getShieldedBalance") as "getQryptedBalance",
         args: isValidToken ? [tokenAddress as `0x${string}`] : undefined,
         query: { enabled: isValidToken },
     });
@@ -92,7 +91,7 @@ export default function TransferPanel({ vaultAddress, walletAddress, chainId, va
     const { data: recipientHasVault } = useReadContract({
         address: factoryAddress,
         abi: factoryAbi,
-        functionName: "hasQryptSafe",
+        functionName: (isV6 ? "hasQryptSafe" : "hasVault") as "hasQryptSafe",
         args: isValidRecipient ? [recipientAddress as `0x${string}`] : undefined,
         query: { enabled: isValidRecipient && !!factoryAddress },
     });
@@ -164,7 +163,7 @@ export default function TransferPanel({ vaultAddress, walletAddress, chainId, va
                 writeCommit({
                     address: vaultAddress,
                     abi: PERSONAL_VAULT_V6_ABI,
-                    functionName: "commitTransfer",
+                    functionName: "veilTransfer",
                     args: [commitHash],
                 }, {
                     onSuccess: (hash) => {
@@ -222,7 +221,7 @@ export default function TransferPanel({ vaultAddress, walletAddress, chainId, va
                     await publicClient.simulateContract({
                         address: vaultAddress,
                         abi: PERSONAL_VAULT_V6_ABI,
-                        functionName: "revealTransfer",
+                        functionName: "unveilTransfer",
                         args: [
                             tokenAddress as `0x${string}`,
                             recipientAddress as `0x${string}`,
@@ -237,14 +236,14 @@ export default function TransferPanel({ vaultAddress, walletAddress, chainId, va
                     const raw = simErr instanceof Error ? simErr.message : String(simErr);
                     // Extract short reason — strip long hex data
                     const reason = raw.replace(/0x[0-9a-fA-F]{64,}/g, "").trim().slice(0, 300);
-                    setSimulateError(reason || "Simulation failed — check vault proof and try again.");
+                    setSimulateError(reason || "Simulation failed: check vault proof and try again.");
                     return;
                 }
             }
             writeReveal({
                 address: vaultAddress,
                 abi: PERSONAL_VAULT_V6_ABI,
-                functionName: "revealTransfer",
+                functionName: "unveilTransfer",
                 args: [
                     tokenAddress as `0x${string}`,
                     recipientAddress as `0x${string}`,

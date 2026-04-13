@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
@@ -69,7 +68,7 @@ export default function ShieldPanel({ vaultAddress, walletAddress, chainId, vaul
     const { data: existingShieldedBalance } = useReadContract({
         address: vaultAddress,
         abi: vaultAbi,
-        functionName: "getQryptedBalance",
+        functionName: (isV6 ? "getQryptedBalance" : "getShieldedBalance") as "getQryptedBalance",
         args: isValidToken ? [tokenAddress as `0x${string}`] : undefined,
         query: { enabled: isValidToken },
     });
@@ -160,7 +159,7 @@ export default function ShieldPanel({ vaultAddress, walletAddress, chainId, vaul
                 writeShield({
                     address: vaultAddress,
                     abi: PERSONAL_VAULT_V6_ABI,
-                    functionName: "shield",
+                    functionName: "qrypt",
                     args: [tokenAddress as `0x${string}`, parsedAmount, proof],
                 }, {
                     onSuccess: async (hash) => {

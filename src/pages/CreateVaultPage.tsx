@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId, useReadContract } from "wagmi";
 import { ShieldIcon, EyeIcon, EyeOffIcon, CheckCircleIcon, Loader2Icon } from "lucide-react";
@@ -9,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SHIELD_FACTORY_V6_ADDRESSES } from "@/lib/wagmi";
 import { SHIELD_FACTORY_V6_ABI } from "@/lib/abi";
 import { validatePasswordFormat, getPasswordStrengthLabel, generateInitialChainHead, initChainState } from "@/lib/password";
+import { registerVault } from "@/lib/api";
 import { getTxEtherscanUrl } from "@/lib/utils";
 
 interface CreateVaultPageProps {

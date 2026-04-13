@@ -202,13 +202,14 @@ export default function DashboardPage() {
 
     const balanceContracts = useMemo(() => {
         if (!vaultAddress || shieldedTokenAddresses.length === 0) return [];
+        const isV6 = vaultVersion === "v6";
         return shieldedTokenAddresses.map(t => ({
             address: vaultAddress,
-            abi: PERSONAL_VAULT_ABI,
-            functionName: "getQryptedBalance" as const,
+            abi: isV6 ? PERSONAL_VAULT_V6_ABI : PERSONAL_VAULT_ABI,
+            functionName: (isV6 ? "getQryptedBalance" : "getShieldedBalance") as "getQryptedBalance",
             args: [t.tokenAddress as `0x${string}`],
         }));
-    }, [vaultAddress, shieldedTokenAddresses]);
+    }, [vaultAddress, vaultVersion, shieldedTokenAddresses]);
 
     const decimalsContracts = useMemo(() => {
         if (shieldedTokenAddresses.length === 0) return [];
@@ -230,7 +231,7 @@ export default function DashboardPage() {
         return shieldedTokenAddresses.map(t => ({
             address: vaultAddress,
             abi: PERSONAL_VAULT_V6_ABI,
-            functionName: "getAirBudget" as const,
+            functionName: "getAirBags" as const,
             args: [t.tokenAddress as `0x${string}`],
         }));
     }, [vaultAddress, vaultVersion, shieldedTokenAddresses]);
@@ -479,7 +480,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     padding: "0 22px", height: 56, flexShrink: 0,
                     borderBottom: "1px solid rgba(255,255,255,0.07)",
                 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "#d4d6e2", letterSpacing: "-0.01em" }}>
                         {MODAL_TITLES[id]}
                     </span>
                     <button
@@ -620,8 +621,8 @@ function DesktopLayout(p: SharedProps) {
                 padding: "0 28px",
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={import.meta.env.BASE_URL + 'qryptum-logo.png'} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
-                    <span style={{ fontWeight: 800, fontSize: 14, color: "#fff", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
+                    <img src="/qryptum-logo.png" alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {p.isConnected ? <TopBarWallet {...p} /> : <ConnectButton {...p} />}
@@ -707,8 +708,8 @@ function MobileLayout(p: SharedProps) {
                 background: "rgba(0,0,0,0.97)", position: "sticky", top: 0, zIndex: 20,
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={import.meta.env.BASE_URL + 'qryptum-logo.png'} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
-                    <span style={{ fontWeight: 800, fontSize: 14, color: "#fff", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
+                    <img src="/qryptum-logo.png" alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
 
                 {p.isConnected && p.hasVault ? (
@@ -739,7 +740,7 @@ function MobileLayout(p: SharedProps) {
                         }} style={{
                             background: "#2563eb", border: "none", borderRadius: 20,
                             padding: "7px 14px", cursor: "pointer",
-                            fontSize: 12, fontWeight: 600, color: "#fff",
+                            fontSize: 12, fontWeight: 600, color: "#d4d6e2",
                             display: "flex", alignItems: "center", gap: 6,
                         }}>
                             <WalletIcon size={13} /> Connect Wallet
@@ -930,7 +931,7 @@ function TopBarWallet(p: SharedProps) {
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     <TokenLogo tokenAddress="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" tokenSymbol="ETH" color="#818cf8" size={28} />
                                     <div>
-                                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#fff" }}>ETH</p>
+                                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#d4d6e2" }}>ETH</p>
                                         <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>Ethereum</p>
                                     </div>
                                 </div>
@@ -951,7 +952,7 @@ function TopBarWallet(p: SharedProps) {
                                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                         <TokenLogo tokenAddress={t.address} tokenSymbol={t.symbol} color={t.color} size={28} />
                                         <div>
-                                            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#fff" }}>{t.symbol}</p>
+                                            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#d4d6e2" }}>{t.symbol}</p>
                                             <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{t.name}</p>
                                         </div>
                                     </div>
@@ -1020,7 +1021,7 @@ function ConnectorMenu({ connectors, onConnect }: { connectors: readonly Connect
                         display: "flex", alignItems: "center", gap: 10,
                         width: "100%", padding: "10px 12px", borderRadius: 8,
                         background: "none", border: "none", cursor: "pointer",
-                        color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: 13, textAlign: "left",
+                        color: "#d4d6e2", fontFamily: "'Inter', sans-serif", fontSize: 13, textAlign: "left",
                     }}
                         onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
                         onMouseLeave={e => (e.currentTarget.style.background = "none")}
@@ -1111,7 +1112,7 @@ function PH({ title, right }: { title: string; right?: React.ReactNode }) {
             padding: "13px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)",
             display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
         }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", letterSpacing: "-0.01em" }}>{title}</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#d4d6e2", letterSpacing: "-0.01em" }}>{title}</p>
             {right}
         </div>
     );
@@ -1168,7 +1169,7 @@ function PriceChart({ symbol, color }: { symbol: string; color: string }) {
             ) : (
                 <>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                        <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", fontFamily: "monospace" }}>
+                        <p style={{ fontSize: 18, fontWeight: 700, color: "#d4d6e2", fontFamily: "monospace" }}>
                             ${currentPrice!.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: currentPrice! < 1 ? 6 : 2 })}
                         </p>
                         {change24h !== null && (
@@ -1335,7 +1336,7 @@ function DesktopDashboard(p: SharedProps) {
                                             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
                                                 No shielded tokens yet.<br />Shield a token to get started.
                                             </p>
-                                            <button onClick={() => p.setActiveModal("shield")} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                            <button onClick={() => p.setActiveModal("shield")} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#2563eb", color: "#d4d6e2", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                                 Shield First Token
                                             </button>
                                         </div>
@@ -1410,7 +1411,7 @@ function DesktopDashboard(p: SharedProps) {
                                 }}>
                                     <TokenLogo tokenAddress={selectedToken.tokenAddress} tokenSymbol={selectedToken.tokenSymbol} color={selectedToken.color} size={32} />
                                     <div>
-                                        <p style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>
+                                        <p style={{ fontSize: 15, fontWeight: 700, color: "#d4d6e2" }}>
                                             {sidebarTab === "safes" ? `q${selectedToken.tokenSymbol}` : selectedToken.tokenSymbol}
                                         </p>
                                         <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
@@ -1432,7 +1433,7 @@ function DesktopDashboard(p: SharedProps) {
                                                     <button onClick={() => { p.setActiveUnshieldToken(selectedToken.tokenAddress); p.setActiveModal("unshield"); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "1px solid rgba(248,113,113,0.25)", background: "transparent", color: "#f87171", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                                                         <LockIcon size={11} /> Unshield
                                                     </button>
-                                                    <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("transfer-select"); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                                                    <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("transfer-select"); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "none", background: "#2563eb", color: "#d4d6e2", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                                                         <SendIcon size={11} /> Transfer
                                                     </button>
                                                 </>
@@ -1463,7 +1464,7 @@ function DesktopDashboard(p: SharedProps) {
                                                         {tx.type === "shield" ? <ShieldIcon size={11} color="#4ade80" /> : tx.type === "receive" || tx.type === "air-receive" ? <ArrowDownIcon size={11} color="#4ade80" /> : tx.type === "reclaim" ? <ArrowDownIcon size={11} color="#60a5fa" /> : tx.type === "fund" ? <PlusIcon size={11} color="#4ade80" /> : <SendIcon size={11} color={tx.type === "transfer" ? "#60a5fa" : "#F59E0B"} />}
                                                     </div>
                                                     <div style={{ minWidth: 0 }}>
-                                                        <p style={{ fontSize: 11, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                                        <p style={{ fontSize: 11, fontWeight: 600, color: "#d4d6e2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                                             {deskTxLabel(tx.type)}
                                                         </p>
                                                         <a href={getTxEtherscanUrl(tx.txHash, p.chainId)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontFamily: "monospace", color: "#60a5fa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 2 }}>
@@ -1550,7 +1551,7 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                                             <div style={{ display: "flex", alignItems: "center", gap: 12, opacity: v.shieldedBalance === 0n ? 0.45 : 1 }}>
                                                 <TokenLogo tokenAddress={v.tokenAddress} tokenSymbol={v.tokenSymbol} color={v.color} size={36} />
                                                 <div>
-                                                    <p style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>q{v.tokenSymbol}</p>
+                                                    <p style={{ fontSize: 14, fontWeight: 600, color: "#d4d6e2" }}>q{v.tokenSymbol}</p>
                                                     <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{formatBalance(v.shieldedBalance, v.decimals)} shielded</p>
                                                 </div>
                                             </div>
@@ -1582,7 +1583,7 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                                             <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
                                                 <TokenLogo tokenAddress={v.tokenAddress} tokenSymbol={v.tokenSymbol} color={v.color} size={36} />
                                                 <div style={{ minWidth: 0 }}>
-                                                    <p style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{v.tokenSymbol}</p>
+                                                    <p style={{ fontSize: 14, fontWeight: 600, color: "#d4d6e2" }}>{v.tokenSymbol}</p>
                                                     <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{formatBalance(airBal, v.decimals)} budgeted</p>
                                                 </div>
                                             </div>
@@ -1634,7 +1635,7 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                             <button onClick={() => { p.setActiveUnshieldToken(selectedToken.tokenAddress); p.setActiveModal("unshield"); }} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "1px solid rgba(248,113,113,0.25)", background: "transparent", color: "#f87171", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                                 <LockIcon size={14} /> Unshield
                             </button>
-                            <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("transfer-select"); }} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                            <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("transfer-select"); }} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "none", background: "#2563eb", color: "#d4d6e2", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                                 <SendIcon size={14} /> Transfer
                             </button>
                         </div>
@@ -1665,7 +1666,7 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                                                     {tx.type === "shield" ? <ShieldIcon size={12} color="#4ade80" /> : tx.type === "receive" || tx.type === "air-receive" ? <ArrowDownIcon size={12} color="#4ade80" /> : tx.type === "reclaim" ? <ArrowDownIcon size={12} color="#60a5fa" /> : tx.type === "fund" ? <PlusIcon size={12} color="#4ade80" /> : <SendIcon size={12} color={tx.type === "transfer" ? "#60a5fa" : "#F59E0B"} />}
                                                 </div>
                                                 <div style={{ minWidth: 0 }}>
-                                                    <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                                    <p style={{ fontSize: 12, fontWeight: 600, color: "#d4d6e2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                                         {txLabel(tx.type)}
                                                     </p>
                                                     <a href={getTxEtherscanUrl(tx.txHash, p.chainId)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontFamily: "monospace", color: "#60a5fa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 2 }}>
@@ -1711,7 +1712,7 @@ function ModalVaults({ p }: { p: SharedProps }) {
                 <p style={{ fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 16 }}>No shielded tokens yet.</p>
                 <button onClick={() => p.setActiveModal("shield")} style={{
                     padding: "10px 20px", borderRadius: 10, border: "none",
-                    background: "#2563eb", color: "#fff", cursor: "pointer",
+                    background: "#2563eb", color: "#d4d6e2", cursor: "pointer",
                     fontSize: 13, fontWeight: 600,
                 }}>
                     Shield Your First Token
@@ -1733,7 +1734,7 @@ function ModalVaults({ p }: { p: SharedProps }) {
                         <div style={{ display: "flex", alignItems: "center", gap: 10, opacity: v.shieldedBalance === 0n ? 0.45 : 1 }}>
                             <TokenLogo tokenAddress={v.tokenAddress} tokenSymbol={v.tokenSymbol} color={v.color} size={32} />
                             <div>
-                                <p style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>q{v.tokenSymbol}</p>
+                                <p style={{ fontSize: 13, fontWeight: 600, color: "#d4d6e2" }}>q{v.tokenSymbol}</p>
                                 <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{formatBalance(v.shieldedBalance, v.decimals)}</p>
                             </div>
                         </div>
@@ -1765,7 +1766,7 @@ function ModalVaults({ p }: { p: SharedProps }) {
                             <button onClick={() => { p.setActiveUnshieldToken(selectedToken.tokenAddress); p.setActiveModal("unshield"); }} style={{ flex: 1, padding: "14px 6px", borderRadius: 10, border: "1px solid rgba(248,113,113,0.2)", background: "transparent", color: "#f87171", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                                 <LockIcon size={13} /> Unshield
                             </button>
-                            <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("transfer-select"); }} style={{ flex: 1, padding: "14px 6px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                            <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("transfer-select"); }} style={{ flex: 1, padding: "14px 6px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#d4d6e2", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
                                 <SendIcon size={13} /> Transfer
                             </button>
                         </div>
@@ -1781,7 +1782,7 @@ function ModalVaults({ p }: { p: SharedProps }) {
                                         {tx.type === "shield" ? <ShieldIcon size={11} color="#4ade80" /> : tx.type === "receive" ? <ArrowDownIcon size={11} color="#4ade80" /> : tx.type === "transfer" ? <SendIcon size={11} color="#60a5fa" /> : <LockIcon size={11} color="#f87171" />}
                                     </div>
                                     <div style={{ minWidth: 0 }}>
-                                        <p style={{ fontSize: 11, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        <p style={{ fontSize: 11, fontWeight: 600, color: "#d4d6e2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                             {tx.type === "shield" ? "Shield" : tx.type === "receive" ? "Received" : tx.type === "transfer" ? "Transfer" : "Unshield"}
                                         </p>
                                         <a href={getTxEtherscanUrl(tx.txHash, p.chainId)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontFamily: "monospace", color: "#60a5fa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 2 }}>
@@ -1809,11 +1810,11 @@ function ModalSettingsNoVault({ p }: { p: SharedProps }) {
             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                     <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Wallet</span>
-                    <span style={{ fontSize: 12, color: "#fff", fontFamily: "monospace" }}>{p.shortAddress}</span>
+                    <span style={{ fontSize: 12, color: "#d4d6e2", fontFamily: "monospace" }}>{p.shortAddress}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                     <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Network</span>
-                    <span style={{ fontSize: 13, color: "#fff" }}>{p.networkName}</span>
+                    <span style={{ fontSize: 13, color: "#d4d6e2" }}>{p.networkName}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px" }}>
                     <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Qrypt-Safe</span>
