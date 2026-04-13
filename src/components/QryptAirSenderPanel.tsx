@@ -157,7 +157,7 @@ function AirBudgetManager({
             functionName: "fundAirBags",
             args: [token.tokenAddress as `0x${string}`, parsed, peeked.proof],
         }, {
-            onSuccess: (hash) => pushTx(hash, `Funding air budget with ${fundAmount} ${token.tokenSymbol}`),
+            onSuccess: (hash) => pushTx(hash, `Minting ${fundAmount} ${token.tokenSymbol} to air budget`),
         });
     }, [fundAmount, vaultProof, token, shieldedBalance, walletAddress, vaultAddress, writeFund, toast, pushTx]);
 
@@ -195,7 +195,7 @@ function AirBudgetManager({
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "24px 0" }}>
                 <CheckCircle2Icon size={36} color="#4ade80" />
                 <p style={{ fontSize: 14, fontWeight: 600, color: "#4ade80", margin: 0 }}>
-                    {fundSuccess ? "Air budget funded" : "Air budget reclaimed"}
+                    {fundSuccess ? "Minted" : "Reclaimed"}
                 </p>
                 <button onClick={onDone} style={{
                     background: "none", border: "none", cursor: "pointer",
@@ -219,7 +219,7 @@ function AirBudgetManager({
                         color: subMode === m ? "#F59E0B" : "rgba(255,255,255,0.45)",
                         fontSize: 12, fontWeight: 600, cursor: "pointer",
                         textTransform: "capitalize", fontFamily: "'Inter', sans-serif",
-                    }}>{m === "fund" ? "Fund Budget" : "Reclaim Budget"}</button>
+                    }}>{m === "fund" ? "Mint" : "Reclaim"}</button>
                 ))}
             </div>
 
@@ -287,7 +287,7 @@ function AirBudgetManager({
                 {isPending ? (
                     <><Loader2Icon size={15} style={{ animation: "spin 1s linear infinite" }} /> Processing...</>
                 ) : subMode === "fund" ? (
-                    <><ArrowUpIcon size={15} /> Fund Air Bags</>
+                    <><ArrowUpIcon size={15} /> Mint</>
                 ) : (
                     <><RefreshCwIcon size={15} /> Reclaim Air Bags</>
                 )}
