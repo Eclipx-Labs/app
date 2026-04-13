@@ -4,7 +4,6 @@ import { Link } from "wouter";
 import { useLanguage } from "@/lib/LanguageContext";
 import { translations } from "@/lib/translations";
 type SR = typeof translations.en.sepoliaRecord;
-type SR3 = typeof translations.en.sepoliaRecord.v3;
 
 /* ── Constants ──────────────────────────────────────────────────── */
 const FACTORY_V3    = "";
@@ -231,7 +230,7 @@ function Tag({ text, color = "#627EEA" }: { text: string; color?: string }) {
 /* ── Page ──────────────────────────────────────────────────────── */
 export default function SepoliaVerifiedV3Page() {
     const { t } = useLanguage();
-    const sr = (t.sepoliaRecord as SR).v3 as unknown as SR3;
+    const sr = (t.sepoliaRecord as SR).v3 as any;
     const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" ? window.innerWidth < 900 : false);
     useEffect(() => {
         const fn = () => setIsMobile(window.innerWidth < 900);
