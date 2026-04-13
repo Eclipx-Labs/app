@@ -25,7 +25,6 @@ import { fetchTransactions, fetchPortfolio } from "@/lib/api";
 import { PERSONAL_VAULT_ABI, PERSONAL_VAULT_V6_ABI, ERC20_ABI } from "@/lib/abi";
 import { SUPPORTED_CHAIN_IDS } from "@/lib/wagmi";
 import { hasAppKit, appKitModal } from "@/lib/appkit";
-import qryptumLogoUrl from '@/assets/qryptum-logo.png';
 
 const TOKEN_COLORS = ["#60a5fa","#a78bfa","#fb923c","#facc15","#c084fc","#2dd4bf","#f472b6","#38bdf8","#f87171","#4ade80"];
 
@@ -596,6 +595,11 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     {id === "settings" && !p.vaultAddress && (
                         <ModalSettingsNoVault p={p} />
                     )}
+                    {id === "upgrade-v6" && p.address && (
+                        <div style={{ textAlign: "center", padding: "24px 0", color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
+                            Deploy a new V6 Qrypt-Safe via your wallet to upgrade.
+                        </div>
+                    )}
                     {id === "upgrade-v6" && !p.address && (
                         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
                             Connect your wallet first.
@@ -618,7 +622,7 @@ function DesktopLayout(p: SharedProps) {
                 padding: "0 28px",
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={qryptumLogoUrl} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <img src="/qryptum-logo.png" alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -627,7 +631,7 @@ function DesktopLayout(p: SharedProps) {
             </header>
 
             <main style={{ marginTop: 58, flex: 1, minHeight: "calc(100vh - 58px)" }}>
-                <DesktopDashboard p={p} />
+                <DesktopDashboard {...p} />
             </main>
 
             {(["shield", "transfer", "unshield", "vaults", "settings", "transfer-select", "qryptair-sender", "qryptair-fund", "qryptair-recipient", "qryptshield", "upgrade-v6"] as ModalId[]).map(id => (
@@ -702,7 +706,7 @@ function MobileLayout(p: SharedProps) {
                 background: "rgba(0,0,0,0.97)", position: "sticky", top: 0, zIndex: 20,
             }}>
                 <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={qryptumLogoUrl} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
+                    <img src="/qryptum-logo.png" alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
                     <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
                 </a>
 
@@ -750,7 +754,10 @@ function MobileLayout(p: SharedProps) {
             </header>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 90px" }}>
-                <MobileQryptSafe p={p} mobileTab={mobileNavTab === "air" ? "air" : "safes"} />
+                {mobileNavTab === "profile"
+                    ? <MobileProfileTab p={p} />
+                    : <MobileQryptSafe p={p} mobileTab={mobileNavTab === "air" ? "air" : "safes"} />
+                }
             </div>
 
             {p.isConnected && (
