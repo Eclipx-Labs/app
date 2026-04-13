@@ -596,9 +596,6 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     {id === "settings" && !p.vaultAddress && (
                         <ModalSettingsNoVault p={p} />
                     )}
-                    {id === "upgrade-v6" && p.address && (
-                        {null} />}
-                    )}
                     {id === "upgrade-v6" && !p.address && (
                         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
                             Connect your wallet first.
@@ -630,7 +627,7 @@ function DesktopLayout(p: SharedProps) {
             </header>
 
             <main style={{ marginTop: 58, flex: 1, minHeight: "calc(100vh - 58px)" }}>
-                {null} />
+                null
                 }
             </main>
 
@@ -754,7 +751,7 @@ function MobileLayout(p: SharedProps) {
             </header>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 90px" }}>
-                {null} />
+                null
                         : <MobileQryptSafe p={p} mobileTab={mobileNavTab === "air" ? "air" : "safes"} />
                 }
             </div>
