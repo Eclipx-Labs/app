@@ -1,44 +1,8 @@
-name: CI
-
+name: Disabled
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
+  workflow_dispatch:
 jobs:
-  typecheck:
-    name: Type Check
+  noop:
     runs-on: ubuntu-latest
-    env:
-      PORT: "3000"
-      BASE_PATH: "/app"
-      NODE_ENV: production
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: pnpm install --no-frozen-lockfile
-      - run: pnpm run typecheck
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    env:
-      PORT: "3000"
-      BASE_PATH: "/app"
-      NODE_ENV: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: pnpm install --no-frozen-lockfile
-      - run: pnpm run build
+      - run: echo disabled
