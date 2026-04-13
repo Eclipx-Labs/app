@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount, useChainId, useReadContract } from "wagmi";
 import { SHIELD_FACTORY_ADDRESSES, SHIELD_FACTORY_V6_ADDRESSES } from "@/lib/wagmi";
 import { SHIELD_FACTORY_ABI, SHIELD_FACTORY_V6_ABI } from "@/lib/abi";
-import { fetchVault } from "@/lib/api";
 
 export type VaultVersion = "v5" | "v6" | null;
 
@@ -64,12 +63,7 @@ export function useVault() {
             refetchInterval: 30_000,
         },
     });
-
-    const { data: vaultRecord } = useQuery({
-        queryKey: ["vault", address],
-        queryFn: () => fetchVault(address!),
-        enabled: !!address && isConnected,
-    });
+    const vaultRecord = null;
 
     // V6 takes priority: if the user has a V6 vault, use it
     const hasVault = hasV6Vault === true || hasV5Vault === true;
