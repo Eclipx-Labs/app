@@ -627,8 +627,7 @@ function DesktopLayout(p: SharedProps) {
             </header>
 
             <main style={{ marginTop: 58, flex: 1, minHeight: "calc(100vh - 58px)" }}>
-                null
-                }
+                <DesktopDashboard p={p} />
             </main>
 
             {(["shield", "transfer", "unshield", "vaults", "settings", "transfer-select", "qryptair-sender", "qryptair-fund", "qryptair-recipient", "qryptshield", "upgrade-v6"] as ModalId[]).map(id => (
@@ -751,9 +750,7 @@ function MobileLayout(p: SharedProps) {
             </header>
 
             <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px 90px" }}>
-                null
-                        : <MobileQryptSafe p={p} mobileTab={mobileNavTab === "air" ? "air" : "safes"} />
-                }
+                <MobileQryptSafe p={p} mobileTab={mobileNavTab === "air" ? "air" : "safes"} />
             </div>
 
             {p.isConnected && (
