@@ -83,13 +83,14 @@
     "level-js": "^6.1.0",
     "memdown": "^6.1.1",
     "snarkjs": "^0.7.6",
-    "viem": "2.21.19",
+    "viem": "2.47.10",
     "vite-plugin-node-polyfills": "^0.26.0",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.6.0",
-    "wagmi": "3.6.1"
+    "wagmi": "3.6.0"
   },
   "overrides": {
-    "@wagmi/core": "2.16.1"
+    "@wagmi/core": "3.4.1",
+    "viem": "2.47.10"
   }
 }
