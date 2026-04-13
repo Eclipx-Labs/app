@@ -62,7 +62,7 @@ export default function QryptShieldLoader({ chainId, onReady, onCancel }: QryptS
         }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
                 <img
-                    src="/qryptum-logo.png"
+                    src={`${import.meta.env.BASE_URL}qryptum-logo.png`}
                     width={44} height={44}
                     alt="Qryptum"
                     style={{ borderRadius: 10 }}
@@ -71,7 +71,7 @@ export default function QryptShieldLoader({ chainId, onReady, onCancel }: QryptS
                     <path d="M2 8h12M8 2v12" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
                 <img
-                    src="/railgun-logo.png"
+                    src={`${import.meta.env.BASE_URL}railgun-logo.png`}
                     width={28} height={28}
                     alt="Railgun"
                     style={{ borderRadius: 7, opacity: 0.75 }}
