@@ -344,7 +344,7 @@ export default function QryptShieldPanel({
                     value: BigInt(unshieldTx.value?.toString() ?? "0"),
                     gas: 2_000_000n,
                     kzg: undefined,
-                } as Parameters<typeof walletClient.sendTransaction>[0]);
+                } as unknown as Parameters<typeof walletClient.sendTransaction>[0]);
                 updateStep("deliver", { detail: "Delivering to recipient (direct)...", txHash: deliverHash });
             }
 
