@@ -115,3 +115,24 @@ export async function recordTransaction(data: {
     if (!res.ok) throw new Error("Failed to record transaction");
     return res.json();
 }
+
+/**
+ * Derive H0 server-side so PROOF_SALT never reaches the frontend bundle.
+ * The server runs PBKDF2-SHA256 (200k iterations) with the secret salt.
+ */
+export async function generateH0Api(
+    vaultProof: string,
+    vaultAddress: string
+): Promise<`0x${string}`> {
+    const res = await fetch(`${BASE}/generate-h0`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vaultProof, vaultAddress }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error ?? "Failed to derive H0 from server");
+    }
+    const data = await res.json();
+    return data.h0 as `0x${string}`;
+}
