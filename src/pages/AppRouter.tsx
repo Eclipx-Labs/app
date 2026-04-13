@@ -42,7 +42,6 @@ export default function AppRouter() {
         <Switch>
             <Route path="/" component={DashboardRoute} />
             <Route path="/create" component={CreateQryptSafePage} />
-            <Route path="/create-personal-qrypt-safe" component={CreateQryptSafePage} />
             <Route>
                 <Redirect to="/" />
             </Route>
