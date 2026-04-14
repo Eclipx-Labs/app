@@ -2,7 +2,11 @@
 // proxies /api to the local server. In production (GitHub Pages / IPFS),
 // VITE_API_BASE may be unset too — fall back to the hardcoded Railway URL so
 // no GitHub Secrets are required.
-const _rawBase = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
+// Strip trailing /api or / from VITE_API_BASE so we always append exactly one /api.
+// Handles both "https://host" and "https://host/api" formats.
+const _rawBase = (import.meta.env.VITE_API_BASE as string | undefined)
+    ?.replace(/\/api\/?$/, "")
+    ?.replace(/\/$/, "");
 const BASE = _rawBase
     ? `${_rawBase}/api`
     : import.meta.env.DEV
