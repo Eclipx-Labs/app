@@ -23,7 +23,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     env:
       NODE_ENV: production
-      PORT: '3000'
       BASE_PATH: '/app'
 
     steps:
@@ -45,10 +44,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build
+      - name: Build shield-app only
         env:
           VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
-        run: pnpm run build
+          VITE_DEPLOY_TARGET: app
+        run: pnpm --filter @workspace/shield-app run build
+
+      - name: Copy index.html to 404.html for SPA routing
+        run: cp artifacts/shield-app/dist/public/index.html artifacts/shield-app/dist/public/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -56,16 +59,11 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/public
+          path: artifacts/shield-app/dist/public
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Configure git author
-        run: |
-          git config user.name "wei-zuan"
-          git config user.email "269530115+wei-zuan@users.noreply.github.com"
 
       - name: Generate release tag
         id: tag

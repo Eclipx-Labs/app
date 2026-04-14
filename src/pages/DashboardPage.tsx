@@ -7,7 +7,7 @@ import {
     ShieldIcon, SendIcon, SettingsIcon,
     WalletIcon, LogOutIcon, CopyIcon, CheckIcon, LockIcon,
     AlertTriangleIcon, UserIcon, XIcon, PlusIcon, ExternalLinkIcon, ArrowDownIcon,
-    WifiOffIcon, ScanLineIcon,
+    WifiOffIcon, ScanLineIcon, RefreshCwIcon,
 } from "lucide-react";
 import { getTxEtherscanUrl } from "@/lib/utils";
 import { useVault } from "@/hooks/useVault";
@@ -20,6 +20,7 @@ import TransferModeSelector from "@/components/TransferModeSelector";
 import QryptAirSenderPanel from "@/components/QryptAirSenderPanel";
 import QryptAirRecipientPanel from "@/components/QryptAirRecipientPanel";
 import QryptShieldGate from "@/components/QryptShieldGate";
+import ChainSyncModal from "@/components/ChainSyncModal";
 import TokenLogo from "@/components/TokenLogo";
 import { fetchTransactions, fetchPortfolio } from "@/lib/api";
 import { PERSONAL_VAULT_ABI, PERSONAL_VAULT_V6_ABI, ERC20_ABI } from "@/lib/abi";
@@ -69,7 +70,7 @@ interface TokenWithBalance {
     color: string;
 }
 
-type ModalId = "shield" | "transfer" | "unshield" | "vaults" | "settings" | "transfer-select" | "qryptair-sender" | "qryptair-fund" | "qryptair-recipient" | "qryptshield" | "upgrade-v6";
+type ModalId = "shield" | "transfer" | "unshield" | "vaults" | "settings" | "transfer-select" | "qryptair-sender" | "qryptair-fund" | "qryptair-recipient" | "qryptshield" | "upgrade-v6" | "chain-sync";
 
 interface WalletErc20Token {
     address: string;
@@ -431,6 +432,7 @@ const MODAL_TITLES: Record<ModalId, string> = {
     "qryptair-recipient":"QryptAir · Receive",
     qryptshield:         "QryptShield",
     "upgrade-v6":        "Upgrade to V6 Qrypt-Safe",
+    "chain-sync":        "OTP Chain · Position Recovery",
 };
 
 function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
@@ -588,6 +590,14 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     {id === "settings" && !p.vaultAddress && (
                         <ModalSettingsNoVault p={p} />
                     )}
+                    {id === "chain-sync" && p.vaultAddress && p.address && (
+                        <ChainSyncModal vaultAddress={p.vaultAddress} walletAddress={p.address} vaultVersion={p.vaultVersion} />
+                    )}
+                    {id === "chain-sync" && (!p.vaultAddress || !p.address) && (
+                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
+                            Connect your wallet and create a Qrypt-Safe to use chain sync.
+                        </p>
+                    )}
                     {id === "upgrade-v6" && p.address && (
                         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
                             Vault upgrade available — connect wallet to proceed.
@@ -614,10 +624,24 @@ function DesktopLayout(p: SharedProps) {
                 display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "0 28px",
             }}>
-                <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={`${import.meta.env.BASE_URL}qryptum-logo.png`} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
-                    <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
-                </a>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
+                        <img src={`${import.meta.env.BASE_URL}qryptum-logo.png`} alt="Qryptum" style={{ height: 44, width: 44, objectFit: "contain" }} />
+                        <span style={{ fontWeight: 800, fontSize: 16, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -5 }}>QRYPTUM</span>
+                    </a>
+                    <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.1)" }} />
+                    {[
+                        { href: "https://qryptum.org", label: "Website", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
+                        { href: "https://github.com/qryptumorg", label: "GitHub", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg> },
+                        { href: "https://x.com/qryptumorg", label: "X", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+                    ].map(({ href, label, icon }) => (
+                        <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 7, color: "rgba(255,255,255,0.4)", textDecoration: "none", transition: "color 0.15s, background 0.15s" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#fff"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.08)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.4)"; (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                        >{icon}</a>
+                    ))}
+                </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     {p.isConnected ? <TopBarWallet {...p} /> : <ConnectButton {...p} />}
                 </div>
@@ -627,7 +651,7 @@ function DesktopLayout(p: SharedProps) {
                 <DesktopDashboard {...p} />
             </main>
 
-            {(["shield", "transfer", "unshield", "vaults", "settings", "transfer-select", "qryptair-sender", "qryptair-fund", "qryptair-recipient", "qryptshield", "upgrade-v6"] as ModalId[]).map(id => (
+            {(["shield", "transfer", "unshield", "vaults", "settings", "transfer-select", "qryptair-sender", "qryptair-fund", "qryptair-recipient", "qryptshield", "upgrade-v6", "chain-sync"] as ModalId[]).map(id => (
                 <Modal key={id} id={id} p={p} />
             ))}
         </div>
@@ -698,10 +722,21 @@ function MobileLayout(p: SharedProps) {
                 padding: "0 20px", borderBottom: "1px solid rgba(255,255,255,0.15)",
                 background: "rgba(0,0,0,0.97)", position: "sticky", top: 0, zIndex: 20,
             }}>
-                <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
-                    <img src={`${import.meta.env.BASE_URL}qryptum-logo.png`} alt="Qryptum" style={{ height: 32, width: 32, objectFit: "contain" }} />
-                    <span style={{ fontWeight: 800, fontSize: 14, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -4 }}>QRYPTUM</span>
-                </a>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 0 }}>
+                        <img src={`${import.meta.env.BASE_URL}qryptum-logo.png`} alt="Qryptum" style={{ height: 42, width: 42, objectFit: "contain" }} />
+                        <span style={{ fontWeight: 800, fontSize: 15, color: "#d4d6e2", letterSpacing: "-0.01em", marginLeft: -5 }}>QRYPTUM</span>
+                    </a>
+                    {[
+                        { href: "https://qryptum.org", label: "Website", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
+                        { href: "https://github.com/qryptumorg", label: "GitHub", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg> },
+                        { href: "https://x.com/qryptumorg", label: "X", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+                    ].map(({ href, label, icon }) => (
+                        <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: 6, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}
+                        >{icon}</a>
+                    ))}
+                </div>
 
                 {p.isConnected && p.hasVault ? (
                     <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
@@ -760,9 +795,8 @@ function MobileLayout(p: SharedProps) {
                     display: "flex", zIndex: 30,
                 }}>
                     {([
-                        { id: "safes" as const, icon: <ShieldIcon size={21} />, label: "QRYPT-SAFES", color: "#22C55E" },
-                        { id: "air" as const, icon: <WifiOffIcon size={21} />, label: "AIR BAGS", color: "#F59E0B" },
-                        { id: "profile" as const, icon: <UserIcon size={21} />, label: "PROFILE", color: "#60a5fa" },
+                        { id: "safes" as const, icon: <ShieldIcon size={19} />, label: "QRYPT-SAFES", color: "#22C55E" },
+                        { id: "air" as const, icon: <WifiOffIcon size={19} />, label: "AIR BAGS", color: "#F59E0B" },
                     ]).map(tab => {
                         const isActive = mobileNavTab === tab.id;
                         return (
@@ -778,10 +812,33 @@ function MobileLayout(p: SharedProps) {
                             </button>
                         );
                     })}
+                    <button
+                        onClick={() => p.setActiveModal("chain-sync")}
+                        style={{
+                            flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+                            justifyContent: "center", gap: 4, background: "none", border: "none",
+                            cursor: "pointer", transition: "color 0.15s",
+                            color: "rgba(74,222,128,0.4)",
+                            borderTop: "2px solid transparent",
+                        }}
+                    >
+                        <RefreshCwIcon size={19} />
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em" }}>OTP CHAIN</span>
+                    </button>
+                    <button onClick={() => setMobileNavTab("profile")} style={{
+                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+                        justifyContent: "center", gap: 4, background: "none", border: "none",
+                        cursor: "pointer", transition: "color 0.15s",
+                        color: mobileNavTab === "profile" ? "#60a5fa" : "rgba(255,255,255,0.25)",
+                        borderTop: mobileNavTab === "profile" ? "2px solid #60a5fa" : "2px solid transparent",
+                    }}>
+                        <UserIcon size={19} />
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em" }}>PROFILE</span>
+                    </button>
                 </nav>
             )}
 
-            {(["shield", "transfer", "unshield", "settings", "transfer-select", "qryptair-sender", "qryptair-fund", "qryptair-recipient", "qryptshield", "upgrade-v6"] as ModalId[]).map(id => (
+            {(["shield", "transfer", "unshield", "settings", "transfer-select", "qryptair-sender", "qryptair-fund", "qryptair-recipient", "qryptshield", "upgrade-v6", "chain-sync"] as ModalId[]).map(id => (
                 <Modal key={id} id={id} p={p} />
             ))}
         </div>
@@ -954,6 +1011,20 @@ function TopBarWallet(p: SharedProps) {
                     </div>
                 )}
             </div>
+
+            <button
+                onClick={() => p.setActiveModal("chain-sync")}
+                title="OTP Chain Position Recovery"
+                style={{
+                    background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.2)",
+                    borderRadius: 20, padding: "6px 10px", cursor: "pointer",
+                    color: "rgba(74,222,128,0.5)", display: "flex", alignItems: "center",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#4ade80"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(34,197,94,0.14)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(74,222,128,0.5)"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(34,197,94,0.07)"; }}
+            >
+                <RefreshCwIcon size={14} />
+            </button>
 
             <button
                 onClick={() => p.setActiveModal("settings")}
