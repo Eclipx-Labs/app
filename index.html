@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <!-- GitHub Pages SPA: 404.html encodes /app/air → /app/?/air
+         This script restores the real path BEFORE React Router reads the URL -->
+    <script>
+      (function(){var s=window.location.search;if(s.slice(0,2)==='?/'){var p=s.slice(1).replace(/~and~/g,'&');history.replaceState(null,null,window.location.pathname.replace(/\/$/,'')+p+window.location.hash);}})();
+    </script>
     <!-- Timer starts immediately — before any blocking resources -->
     <script>
       window.__SPLASH_START__ = Date.now();

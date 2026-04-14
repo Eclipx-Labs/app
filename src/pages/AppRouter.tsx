@@ -2,9 +2,9 @@ import { Suspense, lazy, useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { LanguageProvider } from "@/lib/LanguageContext";
 import PageLoader from "@/components/PageLoader";
+import QryptAirPWAPage from "./QryptAirPWAPage";
 
 const DashboardPage = lazy(() => import("./DashboardPage"));
-const QryptAirPWAPage = lazy(() => import("./QryptAirPWAPage"));
 const NotFound = lazy(() => import("./not-found"));
 
 function DashboardRoute() {
