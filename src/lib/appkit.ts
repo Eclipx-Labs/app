@@ -1,6 +1,8 @@
 import { http, createConfig } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
 import { injected } from "wagmi/connectors";
+import { createAppKit } from "@reown/appkit";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 
 const _defaultConfig = createConfig({
     chains: [sepolia, mainnet],
@@ -17,10 +19,6 @@ export let appKitModal: any = null;
 
 export async function initAppKit(projectId: string): Promise<void> {
     try {
-        const [{ createAppKit }, { WagmiAdapter }] = await Promise.all([
-            import("@reown/appkit"),
-            import("@reown/appkit-adapter-wagmi"),
-        ]);
         const networks = [sepolia, mainnet] as [any, any];
         const adapter = new WagmiAdapter({
             networks,
