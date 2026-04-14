@@ -14,7 +14,6 @@ import {
 import { addDays, formatDistanceToNow } from "date-fns";
 
 const HISTORY_KEY = "qryptair_history";
-const CHAIN_ID = 11155111;
 const DEADLINES = [
     { label: "1d", days: 1 },
     { label: "3d", days: 3 },
@@ -58,9 +57,10 @@ interface VoucherRecord {
     deadline: number;
     chainId: number;
     createdAt: number;
-    status: "pending" | "expired";
+    status: "pending" | "expired" | "claimed";
     qrData: string;
     signature: string;
+    nonce?: string;
 }
 
 function loadHistory(): VoucherRecord[] {
@@ -85,6 +85,13 @@ function syncExpired(records: VoucherRecord[]): { records: VoucherRecord[]; chan
         return r;
     });
     return { records: updated, changed };
+}
+
+function decodeNonce(qrData: string): string | null {
+    try {
+        const decoded = JSON.parse(atob(qrData.replace(/-/g, "+").replace(/_/g, "/")));
+        return decoded.nonce ?? null;
+    } catch { return null; }
 }
 
 const inp: React.CSSProperties = {
@@ -177,6 +184,8 @@ function useAirBagTokens(
 function QrCard({ record }: { record: VoucherRecord }) {
     const logoUrl = `${import.meta.env.BASE_URL}qryptum-logo.png`;
     const isExpired = record.status === "expired";
+    const isClaimed = record.status === "claimed";
+    const isInactive = isExpired || isClaimed;
     const [copied, setCopied] = useState(false);
 
     const copy = useCallback(async () => {
@@ -202,14 +211,19 @@ function QrCard({ record }: { record: VoucherRecord }) {
         URL.revokeObjectURL(url);
     }, [record]);
 
+    const badgeLabel = isClaimed ? "CLAIMED" : isExpired ? "EXPIRED" : "ACTIVE";
+    const badgeBg = isClaimed ? "rgba(74,222,128,0.08)" : isExpired ? "rgba(255,255,255,0.05)" : "rgba(245,158,11,0.1)";
+    const badgeColor = isClaimed ? "#4ade80" : isExpired ? "rgba(255,255,255,0.25)" : "#F59E0B";
+    const badgeBorder = isClaimed ? "1px solid rgba(74,222,128,0.2)" : isExpired ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(245,158,11,0.25)";
+
     return (
         <div style={{
-            background: isExpired ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.04)",
+            background: isInactive ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.04)",
             borderRadius: 14,
-            border: `1px solid ${isExpired ? "rgba(255,255,255,0.05)" : "rgba(245,158,11,0.18)"}`,
+            border: `1px solid ${isClaimed ? "rgba(74,222,128,0.12)" : isExpired ? "rgba(255,255,255,0.05)" : "rgba(245,158,11,0.18)"}`,
             padding: "14px",
             display: "flex", flexDirection: "column", gap: 10,
-            opacity: isExpired ? 0.45 : 1,
+            opacity: isInactive ? 0.55 : 1,
         }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                 <div>
@@ -223,13 +237,11 @@ function QrCard({ record }: { record: VoucherRecord }) {
                 <span style={{
                     fontSize: 9, fontWeight: 800, letterSpacing: "0.07em",
                     padding: "3px 7px", borderRadius: 5, whiteSpace: "nowrap",
-                    background: isExpired ? "rgba(255,255,255,0.05)" : "rgba(245,158,11,0.1)",
-                    color: isExpired ? "rgba(255,255,255,0.25)" : "#F59E0B",
-                    border: `1px solid ${isExpired ? "rgba(255,255,255,0.07)" : "rgba(245,158,11,0.25)"}`,
-                }}>{isExpired ? "EXPIRED" : "ACTIVE"}</span>
+                    background: badgeBg, color: badgeColor, border: badgeBorder,
+                }}>{badgeLabel}</span>
             </div>
 
-            {!isExpired && (
+            {!isInactive && (
                 <div id={`qr-${record.id}`} style={{ alignSelf: "center" }}>
                     <div style={{ background: "#fff", padding: 10, borderRadius: 8, display: "inline-block" }}>
                         <QRCodeSVG
@@ -266,9 +278,9 @@ function QrCard({ record }: { record: VoucherRecord }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                 <span style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", display: "flex", alignItems: "center", gap: 3 }}>
                     <ClockIcon size={9} />
-                    {isExpired ? "Expired" : `Expires ${formatDistanceToNow(new Date(record.deadline * 1000), { addSuffix: true })}`}
+                    {isClaimed ? "Claimed" : isExpired ? "Expired" : `Expires ${formatDistanceToNow(new Date(record.deadline * 1000), { addSuffix: true })}`}
                 </span>
-                {!isExpired && (
+                {!isInactive && (
                     <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={copy} style={{
                             display: "flex", alignItems: "center", gap: 4,
@@ -420,6 +432,7 @@ function SendForm({
     loadingTokens,
     onVoucherCreated,
     history,
+    chainId,
 }: {
     walletAddress: string;
     vaultAddress: string;
@@ -427,6 +440,7 @@ function SendForm({
     loadingTokens: boolean;
     onVoucherCreated: (r: VoucherRecord) => void;
     history: VoucherRecord[];
+    chainId: number;
 }) {
     const [selectedToken, setSelectedToken] = useState<AirToken | null>(null);
     const [amount, setAmount] = useState("");
@@ -532,7 +546,7 @@ function SendForm({
                     ],
                 },
                 primaryType: "Voucher",
-                domain: { name: "QryptAir", version: "1", chainId: CHAIN_ID },
+                domain: { name: "QryptAir", version: "1", chainId: chainId },
                 message: {
                     token: selectedToken.tokenAddress,
                     amount: parsedAmount.toString(),
@@ -569,7 +583,8 @@ function SendForm({
                 recipient,
                 vaultAddress,
                 deadline,
-                chainId: CHAIN_ID,
+                chainId,
+                nonce,
                 createdAt: Math.floor(Date.now() / 1000),
                 status: "pending",
                 qrData: encodeQrPayload(qrPayload),
@@ -587,7 +602,7 @@ function SendForm({
         } finally {
             setLoading(false);
         }
-    }, [walletAddress, vaultAddress, selectedToken, amount, recipient, deadlineDays, maxAmount, onVoucherCreated]);
+    }, [walletAddress, vaultAddress, selectedToken, amount, recipient, deadlineDays, maxAmount, onVoucherCreated, chainId]);
 
     const fieldLabel = (label: string) => (
         <label style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -1052,7 +1067,7 @@ export default function QryptAirPWAPage() {
     const { address, isConnected, connector } = useAccount();
     const chainId = useChainId();
     const { vaultAddress, vaultVersion, hasVault } = useVault();
-    const { airTokens, refetch: refetchTokens } = useAirBagTokens(vaultAddress, vaultVersion, chainId ?? CHAIN_ID);
+    const { airTokens, refetch: refetchTokens } = useAirBagTokens(vaultAddress, vaultVersion, chainId);
 
     const loadingTokens = !!address && isConnected && hasVault && airTokens.length === 0;
 
@@ -1110,6 +1125,48 @@ export default function QryptAirPWAPage() {
     const onVoucherCreated = useCallback((r: VoucherRecord) => {
         setHistory(prev => [r, ...prev]);
     }, []);
+
+    // Auto-resolve pending offTokens by checking usedVoucherNonces on-chain
+    const nonceLookups = useMemo(() => {
+        const result: Array<{ id: string; vaultAddress: string; nonce: `0x${string}` }> = [];
+        for (const r of history) {
+            if (r.status !== "pending") continue;
+            const n: string | null = r.nonce ?? decodeNonce(r.qrData);
+            if (n) result.push({ id: r.id, vaultAddress: r.vaultAddress, nonce: n as `0x${string}` });
+        }
+        return result;
+    }, [history]);
+
+    const nonceContracts = useMemo(() =>
+        nonceLookups.map(l => ({
+            address: l.vaultAddress as `0x${string}`,
+            abi: PERSONAL_VAULT_V6_ABI,
+            functionName: "usedVoucherNonces" as const,
+            args: [l.nonce] as const,
+        })),
+        [nonceLookups],
+    );
+
+    const { data: nonceResults } = useReadContracts({
+        contracts: nonceContracts,
+        query: { enabled: nonceContracts.length > 0 && isConnected, refetchInterval: 30_000 },
+    });
+
+    useEffect(() => {
+        if (!nonceResults || nonceLookups.length === 0) return;
+        const claimedIds = new Set<string>();
+        nonceResults.forEach((result, i) => {
+            if (result.result === true) claimedIds.add(nonceLookups[i].id);
+        });
+        if (claimedIds.size === 0) return;
+        setHistory(prev => {
+            const updated = prev.map(r =>
+                claimedIds.has(r.id) ? { ...r, status: "claimed" as const } : r,
+            );
+            saveHistory(updated);
+            return updated;
+        });
+    }, [nonceResults, nonceLookups]);
 
     const pending = history.filter(r => r.status === "pending").length;
 
@@ -1230,6 +1287,7 @@ export default function QryptAirPWAPage() {
                                 loadingTokens={loadingTokens}
                                 onVoucherCreated={onVoucherCreated}
                                 history={history}
+                                chainId={chainId}
                             />
                         )}
                     </>

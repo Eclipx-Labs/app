@@ -23,6 +23,7 @@ interface QryptAirSenderPanelProps {
     vaultVersion: VaultVersion;
     vaultAddress?: `0x${string}`;
     airBudgets: { [tokenAddress: string]: bigint };
+    onMintSuccess?: () => void;
 }
 
 export default function QryptAirSenderPanel({
@@ -34,6 +35,7 @@ export default function QryptAirSenderPanel({
     vaultVersion,
     vaultAddress,
     airBudgets,
+    onMintSuccess,
 }: QryptAirSenderPanelProps) {
     const [, navigate] = useLocation();
     const [showLauncher, setShowLauncher] = useState(!initialShowBudgetManager);
@@ -92,6 +94,7 @@ export default function QryptAirSenderPanel({
                     vaultAddress={vaultAddress}
                     chainId={chainId}
                     onClose={() => setShowMintModal(false)}
+                    onMintSuccess={onMintSuccess}
                 />
             )}
 

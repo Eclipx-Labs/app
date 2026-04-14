@@ -109,6 +109,7 @@ interface SharedProps {
     transactions: ApiTransaction[];
     refetchData: () => void;
     refetchBalances: () => void;
+    refetchAirBudgets: () => void;
     activeUnshieldToken: string;
     setActiveUnshieldToken: (addr: string) => void;
     activeShieldToken: string;
@@ -387,6 +388,7 @@ export default function DashboardPage() {
         transactions,
         refetchData: refetchTx,
         refetchBalances,
+        refetchAirBudgets,
         activeUnshieldToken,
         setActiveUnshieldToken,
         activeShieldToken,
@@ -563,6 +565,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                             vaultVersion={p.vaultVersion}
                             vaultAddress={p.vaultAddress}
                             airBudgets={p.airBudgets}
+                            onMintSuccess={p.refetchAirBudgets}
                         />
                     )}
                     {(id === "qryptair-sender" || id === "qryptair-fund") && !p.address && (

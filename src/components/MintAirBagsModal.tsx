@@ -23,6 +23,7 @@ interface Props {
     vaultAddress: `0x${string}`;
     chainId: number;
     onClose: () => void;
+    onMintSuccess?: () => void;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -32,7 +33,7 @@ const inputStyle: React.CSSProperties = {
     outline: "none", boxSizing: "border-box",
 };
 
-export default function MintAirBagsModal({ token, airBudget, shieldedBalance, walletAddress, vaultAddress, chainId, onClose }: Props) {
+export default function MintAirBagsModal({ token, airBudget, shieldedBalance, walletAddress, vaultAddress, chainId, onClose, onMintSuccess }: Props) {
     const { toast } = useToast();
     const { pushTx } = useTxStatus();
     const [subMode, setSubMode] = useState<"fund" | "reclaim">("fund");
@@ -60,6 +61,7 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
                 fromAddress: walletAddress,
                 networkId: chainId,
             }).catch(() => {});
+            onMintSuccess?.();
         }
     }, [fundSuccess, fundTxHash]);
 
@@ -76,6 +78,7 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
                 fromAddress: walletAddress,
                 networkId: chainId,
             }).catch(() => {});
+            onMintSuccess?.();
         }
     }, [reclaimSuccess, reclaimTxHash]);
 
