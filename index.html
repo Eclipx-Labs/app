@@ -150,14 +150,26 @@
         animation: _sscan 2s ease-in-out infinite;
       }
 
-      /* circular spinner — shown only in APP_ONLY mode */
+      /* spinner ring with logo inside — shown only in APP_ONLY mode */
       #splash-spinner {
         display: none;
-        width: 44px; height: 44px;
+        position: relative;
+        width: 120px; height: 120px;
+        flex-shrink: 0;
+      }
+      #splash-spinner-ring {
+        position: absolute; inset: 0;
         border-radius: 50%;
         border: 3px solid rgba(139,92,246,0.15);
         border-top-color: #8B5CF6;
-        animation: _sspin 0.9s linear infinite;
+        animation: _sspin 1.1s linear infinite;
+      }
+      #splash-spinner-logo {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       @keyframes _sspin {
         to { transform: rotate(360deg); }
@@ -207,21 +219,28 @@
         <div id="splash-scanner"></div>
       </div>
 
-      <!-- circular spinner — visible only in APP_ONLY mode -->
-      <div id="splash-spinner"></div>
+      <!-- spinner ring with logo inside — visible only in APP_ONLY mode -->
+      <div id="splash-spinner">
+        <div id="splash-spinner-ring"></div>
+        <div id="splash-spinner-logo">
+          <img src="%BASE_URL%qryptum-logo.png" width="56" height="56" alt="Qryptum" />
+        </div>
+      </div>
     </div>
 
     <script>
       var _appOnly = '%VITE_DEPLOY_TARGET%' === 'app';
 
       if (_appOnly) {
-        // GitHub Pages build: show only the logo + circular spinner.
-        // Hide all marketing text so the splash is a clean loading state.
+        // GitHub Pages build: show only the spinner ring with logo inside.
+        // Hide standalone top logo + all marketing text.
         var _hide = ['splash-line1','splash-line2','splash-tagline','splash-loader','splash-label'];
         _hide.forEach(function(id){
           var el = document.getElementById(id);
           if (el) el.style.display = 'none';
         });
+        var _topLogo = document.querySelector('#splash-html > img');
+        if (_topLogo) _topLogo.style.display = 'none';
         var _sp = document.getElementById('splash-spinner');
         if (_sp) _sp.style.display = 'block';
       }
