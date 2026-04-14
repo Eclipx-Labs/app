@@ -98,23 +98,29 @@ async function boot() {
     const appKitInit = fetchAndInitAppKit();
 
     if (!skipSplash) {
-        // Hard cap on the ENTIRE preload+init sequence.
-        // preloadPages() has its own internal timeout, but appKitInit does not —
-        // if the @reown/appkit chunk hangs on a slow CDN, appKitInit never resolves
-        // and the splash stays forever. This outer race guarantees we exit in time.
-        const hardCapMs = Math.max(0, startTime + MAX_MS - 600 - Date.now());
-        await Promise.race([
-            Promise.all([preloadPages(), appKitInit]),
-            new Promise<void>(res => setTimeout(res, hardCapMs)),
-        ]);
+        if (APP_ONLY) {
+            // APP_ONLY (GitHub Pages): dismiss spinner after MIN_MS only.
+            // appKitInit runs in the background — the app renders immediately with
+            // the fallback wagmi injected config. AppKit modal becomes available
+            // once the chunk loads, without blocking the dashboard at all.
+            const minWait = Math.max(0, startTime + MIN_MS - Date.now());
+            if (minWait > 0) await new Promise<void>(res => setTimeout(res, minWait));
+        } else {
+            // Full marketing site: wait for page preloads + appKitInit (or hard cap).
+            const hardCapMs = Math.max(0, startTime + MAX_MS - 600 - Date.now());
+            await Promise.race([
+                Promise.all([preloadPages(), appKitInit]),
+                new Promise<void>(res => setTimeout(res, hardCapMs)),
+            ]);
 
-        // Wait until MIN_MS elapsed, but never past hard deadline
-        const hardDeadline = startTime + MAX_MS - 600;
-        const minTarget = startTime + MIN_MS;
-        const waitUntil = Math.min(minTarget, hardDeadline);
-        const waitMs = Math.max(0, waitUntil - Date.now());
-        if (waitMs > 0) {
-            await new Promise<void>(res => setTimeout(res, waitMs));
+            // Wait until MIN_MS elapsed, but never past hard deadline
+            const hardDeadline = startTime + MAX_MS - 600;
+            const minTarget = startTime + MIN_MS;
+            const waitUntil = Math.min(minTarget, hardDeadline);
+            const waitMs = Math.max(0, waitUntil - Date.now());
+            if (waitMs > 0) {
+                await new Promise<void>(res => setTimeout(res, waitMs));
+            }
         }
 
         const splash = document.getElementById("splash-html");
