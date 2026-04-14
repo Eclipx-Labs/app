@@ -6,11 +6,11 @@ import { initAppKit } from "./lib/appkit";
 const MIN_MS = 3200;
 const MAX_MS = 7000;
 const startTime = (window as any).__SPLASH_START__ as number ?? Date.now();
-const skipSplash = (window as any).__SPLASH_SKIP__ as boolean ?? false;
 
 // APP_ONLY = true when deployed to GitHub Pages (VITE_DEPLOY_TARGET=app)
-// Only load /app + /air pages. Skip all marketing/docs pages.
+// In APP_ONLY mode: no splash at all — go straight to the app.
 const APP_ONLY = import.meta.env.VITE_DEPLOY_TARGET === "app";
+const skipSplash = APP_ONLY || ((window as any).__SPLASH_SKIP__ as boolean ?? false);
 
 async function preloadPages() {
     // Hard cap: never block past MAX_MS - 600ms (fade time)
@@ -105,7 +105,15 @@ async function boot() {
     const appKitInit = fetchAndInitAppKit();
 
     if (!skipSplash) {
-        await Promise.all([preloadPages(), appKitInit]);
+        // Hard cap on the ENTIRE preload+init sequence.
+        // preloadPages() has its own internal timeout, but appKitInit does not —
+        // if the @reown/appkit chunk hangs on a slow CDN, appKitInit never resolves
+        // and the splash stays forever. This outer race guarantees we exit in time.
+        const hardCapMs = Math.max(0, startTime + MAX_MS - 600 - Date.now());
+        await Promise.race([
+            Promise.all([preloadPages(), appKitInit]),
+            new Promise<void>(res => setTimeout(res, hardCapMs)),
+        ]);
 
         // Wait until MIN_MS elapsed, but never past hard deadline
         const hardDeadline = startTime + MAX_MS - 600;
@@ -125,7 +133,11 @@ async function boot() {
 
         sessionStorage.setItem("qryptum_splash_done", "1");
     } else {
-        await appKitInit;
+        // Still cap appKitInit — if the chunk hangs, render the app anyway
+        await Promise.race([
+            appKitInit,
+            new Promise<void>(res => setTimeout(res, 5000)),
+        ]);
     }
 
     createRoot(document.getElementById("root")!).render(<App />);
