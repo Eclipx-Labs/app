@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { initAppKit } from "./lib/appkit";
 
 const MIN_MS = 2000;
 const MAX_MS = 5000;
@@ -21,9 +22,26 @@ async function preloadPages() {
     ]);
 }
 
+async function fetchAndInitAppKit(): Promise<void> {
+    const base = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
+    if (base) {
+        try {
+            const res = await fetch(`${base}/config`, { signal: AbortSignal.timeout(3000) });
+            if (res.ok) {
+                const data = await res.json();
+                if (data?.wcProjectId) { initAppKit(data.wcProjectId); return; }
+            }
+        } catch {}
+    }
+    const envId = import.meta.env.VITE_REOWN_PROJECT_ID as string | undefined;
+    if (envId) initAppKit(envId);
+}
+
 async function boot() {
+    const appKitInit = fetchAndInitAppKit();
+
     if (!skipSplash) {
-        await preloadPages();
+        await Promise.all([preloadPages(), appKitInit]);
 
         const hardDeadline = startTime + MAX_MS - 600;
         const minTarget = startTime + MIN_MS;

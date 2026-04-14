@@ -78,6 +78,8 @@
   "dependencies": {
     "@railgun-community/shared-models": "8.0.1",
     "@railgun-community/wallet": "10.8.4",
+    "@reown/appkit": "^1.8.19",
+    "@reown/appkit-adapter-wagmi": "^1.8.19",
     "buffer": "^6.0.3",
     "ethers": "^6.16.0",
     "level-js": "^6.1.0",
