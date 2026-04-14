@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAccount, useChainId, useDisconnect, useConnect, useBalance, useReadContracts, useSwitchChain } from "wagmi";
 import type { Connector } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { useQuery } from "@tanstack/react-query";
 import {
     ShieldIcon, SendIcon, SettingsIcon,
@@ -116,6 +116,7 @@ interface SharedProps {
     activeTransferToken: string;
     setActiveTransferToken: (addr: string) => void;
     airBudgets: { [tokenAddress: string]: bigint };
+    adjustedAirBudgets: { [tokenAddress: string]: bigint };
 }
 
 export default function DashboardPage() {
@@ -250,6 +251,27 @@ export default function DashboardPage() {
         });
         return map;
     }, [airBudgetResults, shieldedTokenAddresses]);
+
+    const adjustedAirBudgets = useMemo(() => {
+        const adjusted: { [tokenAddress: string]: bigint } = { ...airBudgets };
+        try {
+            const history: Array<{ tokenAddress: string; amount: string; status: string }> =
+                JSON.parse(localStorage.getItem("qryptair_history") || "[]");
+            const pendingByToken: Record<string, bigint> = {};
+            for (const r of history) {
+                if (r.status !== "pending") continue;
+                const token = tokensWithBalances.find(t => t.tokenAddress.toLowerCase() === r.tokenAddress.toLowerCase());
+                if (!token) continue;
+                const key = r.tokenAddress.toLowerCase();
+                pendingByToken[key] = (pendingByToken[key] ?? 0n) + parseUnits(r.amount, token.decimals);
+            }
+            for (const [addr, pending] of Object.entries(pendingByToken)) {
+                const onChain = adjusted[addr] ?? 0n;
+                adjusted[addr] = onChain > pending ? onChain - pending : 0n;
+            }
+        } catch {}
+        return adjusted;
+    }, [airBudgets, tokensWithBalances]);
 
     useEffect(() => {
         if (!address || !isConnected || !vaultAddress || vaultVersion !== "v6") return;
@@ -394,6 +416,7 @@ export default function DashboardPage() {
         activeTransferToken,
         setActiveTransferToken,
         airBudgets,
+        adjustedAirBudgets,
     };
 
     return (
@@ -1466,7 +1489,7 @@ function DesktopDashboard(p: SharedProps) {
                                             </p>
                                         </div>
                                     ) : p.tokensWithBalances.map((v, i) => {
-                                        const airBal = p.airBudgets[v.tokenAddress] ?? 0n;
+                                        const airBal = p.adjustedAirBudgets[v.tokenAddress] ?? 0n;
                                         const isSelected = selected === v.tokenAddress;
                                         return (
                                             <div key={v.tokenAddress} onClick={() => setSelected(v.tokenAddress)} style={{ borderBottom: i < p.tokensWithBalances.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0", cursor: "pointer", gap: 6 }}>
@@ -1503,7 +1526,7 @@ function DesktopDashboard(p: SharedProps) {
                                         <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
                                             {sidebarTab === "safes"
                                                 ? `${formatBalance(selectedToken.shieldedBalance, selectedToken.decimals)} shielded`
-                                                : `${formatBalance(p.airBudgets[selectedToken.tokenAddress] ?? 0n, selectedToken.decimals)} budgeted`}
+                                                : `${formatBalance(p.adjustedAirBudgets[selectedToken.tokenAddress] ?? 0n, selectedToken.decimals)} budgeted`}
                                         </p>
                                     </div>
                                 </div>
@@ -1662,7 +1685,7 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                         ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                                 {p.tokensWithBalances.map(v => {
-                                    const airBal = p.airBudgets[v.tokenAddress] ?? 0n;
+                                    const airBal = p.adjustedAirBudgets[v.tokenAddress] ?? 0n;
                                     const isSelected = selected === v.tokenAddress;
                                     return (
                                         <div key={v.tokenAddress} onClick={() => setSelected(isSelected ? "" : v.tokenAddress)} style={{ borderRadius: 12, background: isSelected ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)", border: isSelected ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", cursor: "pointer", gap: 8 }}>
