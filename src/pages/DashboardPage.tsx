@@ -454,7 +454,7 @@ const MODAL_TITLES: Record<ModalId, string> = {
     settings:            "Settings",
     "transfer-select":   "Transfer",
     "qryptair-sender":   "QryptAir · Send",
-    "qryptair-fund":     "QryptAir · Fund Air Bags",
+    "qryptair-fund":     "QryptAir · Mint offToken",
     "qryptair-recipient":"QryptAir · Receive",
     qryptshield:         "QryptShield",
     "upgrade-v6":        "Upgrade to V6 Qrypt-Safe",
@@ -567,7 +567,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     )}
                     {(id === "qryptair-sender" || id === "qryptair-fund") && !p.address && (
                         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-                            Connect your wallet to create a voucher.
+                            Connect your wallet to create an offToken.
                         </p>
                     )}
                     {id === "qryptair-recipient" && (
@@ -626,7 +626,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     )}
                     {id === "upgrade-v6" && p.address && (
                         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-                            Vault upgrade available — connect wallet to proceed.
+                            Vault upgrade available. Connect your wallet to proceed.
                         </p>
                     )}
                     {id === "upgrade-v6" && !p.address && (
@@ -1303,6 +1303,7 @@ function SparkLine({ points, color = "#60a5fa", h = 100, full }: { points: numbe
 function DesktopDashboard(p: SharedProps) {
     const [selected, setSelected] = useState<string>("");
     const [sidebarTab, setSidebarTab] = useState<"safes" | "air">("safes");
+    const [showAirTransferNotice, setShowAirTransferNotice] = useState(false);
 
     useEffect(() => {
         if (!selected && p.tokensWithBalances.length > 0) {
@@ -1313,26 +1314,25 @@ function DesktopDashboard(p: SharedProps) {
     const selectedToken = p.tokensWithBalances.find(t => t.tokenAddress === selected);
 
     const SAFES_TYPES = ["shield", "unshield", "transfer", "receive"];
-    const AIR_TYPES   = ["fund", "reclaim", "voucher", "air-send", "air-receive"];
+    const AIR_TYPES   = ["fund", "voucher", "air-send", "air-receive"];
     const allSelectedTxs = p.transactions.filter(t => t.tokenAddress.toLowerCase() === selected.toLowerCase());
     const selectedTxs = sidebarTab === "safes"
         ? allSelectedTxs.filter(tx => SAFES_TYPES.includes(tx.type))
         : allSelectedTxs.filter(tx => AIR_TYPES.includes(tx.type));
 
-    const deskTxLabel = (type: string) =>
+    const getOffSym = (addr: string) => { const t = p.tokensWithBalances.find(t => t.tokenAddress.toLowerCase() === addr.toLowerCase()); return t ? "off" + t.tokenSymbol : "offToken"; };
+    const deskTxLabel = (type: string, tokenAddress: string) =>
         type === "shield" ? "Shield" : type === "receive" ? "Received" :
         type === "transfer" ? "Transfer" : type === "unshield" ? "Unshield" :
-        type === "fund" ? "Fund Air Bag" : type === "reclaim" ? "Reclaim" :
-        type === "voucher" || type === "air-send" ? "Voucher Sent" :
-        type === "air-receive" ? "Voucher Claimed" : type;
+        type === "fund" ? ("Minted " + getOffSym(tokenAddress)) :
+        type === "voucher" || type === "air-send" ? (getOffSym(tokenAddress) + " Sent") :
+        type === "air-receive" ? (getOffSym(tokenAddress) + " Claimed") : type;
     const deskTxColor = (type: string) =>
         ["shield","receive","fund","air-receive"].includes(type) ? "#4ade80" :
-        ["transfer","air-send","voucher"].includes(type) ? "#F59E0B" :
-        type === "reclaim" ? "#60a5fa" : "#f87171";
+        ["transfer","air-send","voucher"].includes(type) ? "#F59E0B" : "#f87171";
     const deskTxBg = (type: string) =>
         ["shield","receive","fund","air-receive"].includes(type) ? "rgba(74,222,128,0.1)" :
-        ["transfer","air-send","voucher"].includes(type) ? "rgba(245,158,11,0.1)" :
-        type === "reclaim" ? "rgba(96,165,250,0.1)" : "rgba(248,113,113,0.1)";
+        ["transfer","air-send","voucher"].includes(type) ? "rgba(245,158,11,0.1)" : "rgba(248,113,113,0.1)";
     const deskTxSign = (type: string) =>
         ["shield","receive","fund","air-receive"].includes(type) ? "+" : "-";
 
@@ -1449,20 +1449,20 @@ function DesktopDashboard(p: SharedProps) {
                             <>
                                 <div style={{ padding: "10px 14px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
                                     <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", lineHeight: 1.5, margin: "0 0 9px" }}>
-                                        Air Bags is your allocation for offline QryptAir vouchers. Fund tokens from your vault to let recipients claim them without gas.
+                                        Air Bags holds your minted offTokens for offline transfers via QryptAir. Mint tokens from your vault and distribute them without gas fees.
                                     </p>
                                     <button
                                         onClick={() => p.setActiveModal("qryptair-recipient")}
                                         style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.82)", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}
                                     >
-                                        <ScanLineIcon size={12} /> Receive / Redeem Voucher
+                                        <ScanLineIcon size={12} /> Bridge offToken
                                     </button>
                                 </div>
                                 <PB scroll>
                                     {p.tokensWithBalances.length === 0 ? (
                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12, padding: "32px 0" }}>
                                             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
-                                                No shielded tokens.<br />Shield a token first to fund air budget.
+                                                No shielded tokens. Shield a token first to mint offTokens.
                                             </p>
                                         </div>
                                     ) : p.tokensWithBalances.map((v, i) => {
@@ -1474,11 +1474,11 @@ function DesktopDashboard(p: SharedProps) {
                                                     <TokenLogo tokenAddress={v.tokenAddress} tokenSymbol={v.tokenSymbol} color={v.color} size={28} />
                                                     <div style={{ minWidth: 0 }}>
                                                         <p style={{ fontSize: 13, fontWeight: 600, color: isSelected ? "#fff" : "rgba(255,255,255,0.85)" }}>{v.tokenSymbol}</p>
-                                                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{formatBalance(airBal, v.decimals)} budgeted</p>
+                                                        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>off{v.tokenSymbol}: {formatBalance(airBal, v.decimals)}</p>
                                                     </div>
                                                 </div>
                                                 <p style={{ fontSize: 10, color: airBal > 0n ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.2)", flexShrink: 0 }}>
-                                                    {airBal > 0n ? "Funded" : "Empty"}
+                                                    {airBal > 0n ? "Minted" : "Empty"}
                                                 </p>
                                             </div>
                                         );
@@ -1503,7 +1503,7 @@ function DesktopDashboard(p: SharedProps) {
                                         <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
                                             {sidebarTab === "safes"
                                                 ? `${formatBalance(selectedToken.shieldedBalance, selectedToken.decimals)} shielded`
-                                                : `${formatBalance(p.airBudgets[selectedToken.tokenAddress] ?? 0n, selectedToken.decimals)} budgeted`}
+                                                : `${formatBalance(p.airBudgets[selectedToken.tokenAddress] ?? 0n, selectedToken.decimals)} off${selectedToken.tokenSymbol} available`}
                                         </p>
                                     </div>
                                 </div>
@@ -1526,17 +1526,26 @@ function DesktopDashboard(p: SharedProps) {
                                             ) : (
                                                 <>
                                                     <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("qryptair-fund"); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-                                                        <PlusIcon size={11} /> Fund
+                                                        <PlusIcon size={11} /> Mint
                                                     </button>
-                                                    <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("qryptair-sender"); }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.09)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                                                    <button onClick={() => setShowAirTransferNotice(v => !v)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.09)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                                                         <SendIcon size={11} /> Transfer
                                                     </button>
                                                     <button onClick={() => p.setActiveModal("qryptair-recipient")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "13px 4px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-                                                        <ScanLineIcon size={11} /> Receive
+                                                        <ScanLineIcon size={11} /> Bridge
                                                     </button>
                                                 </>
                                             )}
                                         </div>
+                                        {showAirTransferNotice && (
+                                            <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", display: "flex", flexDirection: "column", gap: 8 }}>
+                                                <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>Sending off{selectedToken.tokenSymbol} is done in QryptAir. Open the QryptAir app to send your offTokens offline.</p>
+                                                <div style={{ display: "flex", gap: 6 }}>
+                                                    <a href="/qryptair" target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, fontWeight: 700, padding: "5px 10px", borderRadius: 6, background: "#F59E0B", color: "#000", textDecoration: "none" }}>Open QryptAir</a>
+                                                    <button onClick={() => setShowAirTransferNotice(false)} style={{ fontSize: 11, padding: "5px 10px", borderRadius: 6, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>Dismiss</button>
+                                                </div>
+                                            </div>
+                                        )}
                                         <PriceChart symbol={selectedToken.tokenSymbol} color={selectedToken.color} />
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0, overflowY: "auto" }}>
@@ -1547,11 +1556,11 @@ function DesktopDashboard(p: SharedProps) {
                                             <div key={tx.txHash} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: i < selectedTxs.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none", flexShrink: 0 }}>
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                     <div style={{ width: 28, height: 28, borderRadius: 7, background: deskTxBg(tx.type), border: `1px solid ${deskTxBg(tx.type).replace("0.1", "0.25")}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                                        {tx.type === "shield" ? <ShieldIcon size={11} color="#4ade80" /> : tx.type === "receive" || tx.type === "air-receive" ? <ArrowDownIcon size={11} color="#4ade80" /> : tx.type === "reclaim" ? <ArrowDownIcon size={11} color="#60a5fa" /> : tx.type === "fund" ? <PlusIcon size={11} color="#4ade80" /> : <SendIcon size={11} color={tx.type === "transfer" ? "#60a5fa" : "#F59E0B"} />}
+                                                        {tx.type === "shield" ? <ShieldIcon size={11} color="#4ade80" /> : tx.type === "receive" || tx.type === "air-receive" ? <ArrowDownIcon size={11} color="#4ade80" /> : tx.type === "fund" ? <PlusIcon size={11} color="#4ade80" /> : <SendIcon size={11} color={tx.type === "transfer" ? "#60a5fa" : "#F59E0B"} />}
                                                     </div>
                                                     <div style={{ minWidth: 0 }}>
                                                         <p style={{ fontSize: 11, fontWeight: 600, color: "#d4d6e2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                                            {deskTxLabel(tx.type)}
+                                                            {deskTxLabel(tx.type, tx.tokenAddress)}
                                                         </p>
                                                         <a href={getTxEtherscanUrl(tx.txHash, p.chainId)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontFamily: "monospace", color: "#60a5fa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 2 }}>
                                                             {tx.txHash.slice(0, 8)}... <ExternalLinkIcon size={9} />
@@ -1583,6 +1592,7 @@ function DesktopDashboard(p: SharedProps) {
 function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" | "air" }) {
     const [selected, setSelected] = useState<string>("");
     const [showAllHistory, setShowAllHistory] = useState(false);
+    const [showAirTransferNotice, setShowAirTransferNotice] = useState(false);
 
     const selectedToken = p.tokensWithBalances.find(t => t.tokenAddress === selected);
     const relHistory = p.transactions.filter(t => t.tokenAddress.toLowerCase() === selected.toLowerCase());
@@ -1653,7 +1663,7 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                 ) : (
                     <div style={{ padding: "12px 14px" }}>
                         <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", lineHeight: 1.5, marginBottom: 10 }}>
-                            Air Bags is your allocation for offline QryptAir vouchers. Fund tokens from your vault so recipients can claim them without gas.
+                            Air Bags holds your minted offTokens for offline transfers via QryptAir. Mint tokens from your vault and distribute them without gas fees.
                         </p>
                         {p.tokensWithBalances.length === 0 ? (
                             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.25)", textAlign: "center", padding: "20px 0" }}>
@@ -1670,11 +1680,11 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                                                 <TokenLogo tokenAddress={v.tokenAddress} tokenSymbol={v.tokenSymbol} color={v.color} size={36} />
                                                 <div style={{ minWidth: 0 }}>
                                                     <p style={{ fontSize: 14, fontWeight: 600, color: "#d4d6e2" }}>{v.tokenSymbol}</p>
-                                                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{formatBalance(airBal, v.decimals)} budgeted</p>
+                                                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>off{v.tokenSymbol}: {formatBalance(airBal, v.decimals)}</p>
                                                 </div>
                                             </div>
                                             <p style={{ fontSize: 11, color: airBal > 0n ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.2)", flexShrink: 0 }}>
-                                                {airBal > 0n ? "Funded" : "Empty"}
+                                                {airBal > 0n ? "Minted" : "Empty"}
                                             </p>
                                         </div>
                                     );
@@ -1687,27 +1697,26 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
 
             {selectedToken && (() => {
                 const SAFES_TYPES = ["shield", "unshield", "transfer", "receive"];
-                const AIR_TYPES   = ["fund", "reclaim", "voucher", "air-send", "air-receive"];
+                const AIR_TYPES   = ["fund", "voucher", "air-send", "air-receive"];
                 const tabHistory  = mobileTab === "safes"
                     ? relHistory.filter(tx => SAFES_TYPES.includes(tx.type))
                     : relHistory.filter(tx => AIR_TYPES.includes(tx.type));
                 const visTab    = showAllHistory ? tabHistory : tabHistory.slice(0, HISTORY_PREVIEW);
                 const hasMoreTab = tabHistory.length > HISTORY_PREVIEW;
 
-                const txLabel  = (type: string) =>
+                const getMobOffSym = (addr: string) => { const t = p.tokensWithBalances.find(t => t.tokenAddress.toLowerCase() === addr.toLowerCase()); return t ? "off" + t.tokenSymbol : "offToken"; };
+                const txLabel  = (type: string, tokenAddress: string) =>
                     type === "shield" ? "Shield" : type === "receive" ? "Received" :
                     type === "transfer" ? "Transfer" : type === "unshield" ? "Unshield" :
-                    type === "fund" ? "Fund Air Bag" : type === "reclaim" ? "Reclaim" :
-                    type === "voucher" || type === "air-send" ? "Voucher Sent" :
-                    type === "air-receive" ? "Voucher Claimed" : type;
+                    type === "fund" ? ("Minted " + getMobOffSym(tokenAddress)) :
+                    type === "voucher" || type === "air-send" ? (getMobOffSym(tokenAddress) + " Sent") :
+                    type === "air-receive" ? (getMobOffSym(tokenAddress) + " Claimed") : type;
                 const txColor  = (type: string) =>
                     ["shield","receive","fund","air-receive"].includes(type) ? "#4ade80" :
-                    ["transfer","air-send","voucher"].includes(type) ? "#F59E0B" :
-                    type === "reclaim" ? "#60a5fa" : "#f87171";
+                    ["transfer","air-send","voucher"].includes(type) ? "#F59E0B" : "#f87171";
                 const txBg     = (type: string) =>
                     ["shield","receive","fund","air-receive"].includes(type) ? "rgba(74,222,128,0.1)" :
-                    ["transfer","air-send","voucher"].includes(type) ? "rgba(245,158,11,0.1)" :
-                    type === "reclaim" ? "rgba(96,165,250,0.1)" : "rgba(248,113,113,0.1)";
+                    ["transfer","air-send","voucher"].includes(type) ? "rgba(245,158,11,0.1)" : "rgba(248,113,113,0.1)";
                 const txSign   = (type: string) =>
                     ["shield","receive","fund","air-receive"].includes(type) ? "+" : "-";
 
@@ -1726,14 +1735,25 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                             </button>
                         </div>
                     ) : (
-                        <div style={{ display: "flex", gap: 8 }}>
-                            <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("qryptair-fund"); }} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                                <PlusIcon size={14} /> Fund
-                            </button>
-                            <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("qryptair-sender"); }} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.09)", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                                <SendIcon size={14} /> Transfer
-                            </button>
-                        </div>
+                        <>
+                            <div style={{ display: "flex", gap: 8 }}>
+                                <button onClick={() => { p.setActiveTransferToken(selectedToken.tokenAddress); p.setActiveModal("qryptair-fund"); }} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.75)", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                                    <PlusIcon size={14} /> Mint
+                                </button>
+                                <button onClick={() => setShowAirTransferNotice(v => !v)} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.09)", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                                    <SendIcon size={14} /> Transfer
+                                </button>
+                            </div>
+                            {showAirTransferNotice && (
+                                <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}>Sending off{selectedToken.tokenSymbol} is done in QryptAir. Open the QryptAir app to send your offTokens offline.</p>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                        <a href="/qryptair" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 8, background: "#F59E0B", color: "#000", textDecoration: "none" }}>Open QryptAir</a>
+                                        <button onClick={() => setShowAirTransferNotice(false)} style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>Dismiss</button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                     <div style={{ height: 180, display: "flex", flexDirection: "column", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "14px 16px", minHeight: 0 }}>
                         <PriceChart symbol={selectedToken.tokenSymbol} color={selectedToken.color} />
@@ -1749,11 +1769,11 @@ function MobileQryptSafe({ p, mobileTab }: { p: SharedProps; mobileTab: "safes" 
                                         <div key={tx.txHash} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: i < visTab.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                                                 <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: txBg(tx.type), border: `1px solid ${txBg(tx.type).replace("0.1", "0.25")}` }}>
-                                                    {tx.type === "shield" ? <ShieldIcon size={12} color="#4ade80" /> : tx.type === "receive" || tx.type === "air-receive" ? <ArrowDownIcon size={12} color="#4ade80" /> : tx.type === "reclaim" ? <ArrowDownIcon size={12} color="#60a5fa" /> : tx.type === "fund" ? <PlusIcon size={12} color="#4ade80" /> : <SendIcon size={12} color={tx.type === "transfer" ? "#60a5fa" : "#F59E0B"} />}
+                                                    {tx.type === "shield" ? <ShieldIcon size={12} color="#4ade80" /> : tx.type === "receive" || tx.type === "air-receive" ? <ArrowDownIcon size={12} color="#4ade80" /> : tx.type === "fund" ? <PlusIcon size={12} color="#4ade80" /> : <SendIcon size={12} color={tx.type === "transfer" ? "#60a5fa" : "#F59E0B"} />}
                                                 </div>
                                                 <div style={{ minWidth: 0 }}>
                                                     <p style={{ fontSize: 12, fontWeight: 600, color: "#d4d6e2", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                                        {txLabel(tx.type)}
+                                                        {txLabel(tx.type, tx.tokenAddress)}
                                                     </p>
                                                     <a href={getTxEtherscanUrl(tx.txHash, p.chainId)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontFamily: "monospace", color: "#60a5fa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 2 }}>
                                                         {tx.txHash.slice(0, 8)}... <ExternalLinkIcon size={9} />

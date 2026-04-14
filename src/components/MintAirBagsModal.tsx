@@ -190,18 +190,18 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
                                     color: subMode === m ? "#F59E0B" : "rgba(255,255,255,0.45)",
                                     fontSize: 13, fontWeight: 700, cursor: "pointer",
                                     fontFamily: "'Inter', sans-serif",
-                                }}>{m === "fund" ? "Mint Air Bags" : "Reclaim"}</button>
+                                }}>{m === "fund" ? `Mint off${token.tokenSymbol}` : "Reclaim"}</button>
                             ))}
                         </div>
 
                         {subMode === "fund" && (
                             <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
-                                Burn your q{token.tokenSymbol} to mint a{token.tokenSymbol} Air Bags. Use them to send tokens offline via QryptAir without a wallet.
+                                Burn your q{token.tokenSymbol} to mint off{token.tokenSymbol}. Use them to send tokens offline via QryptAir without a wallet.
                             </p>
                         )}
                         {subMode === "reclaim" && (
                             <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
-                                Return unused Air Bags back to your shielded balance.
+                                Return unused off{token.tokenSymbol} back to your shielded balance.
                             </p>
                         )}
 
@@ -211,9 +211,9 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
                             display: "flex", flexDirection: "column", gap: 8,
                         }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Current Air Bags</span>
+                                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Current off{token.tokenSymbol}</span>
                                 <span style={{ fontSize: 13, fontWeight: 700, color: "#F59E0B", fontFamily: "monospace" }}>
-                                    {formatUnits(airBudget, token.decimals)} {token.tokenSymbol}
+                                    {formatUnits(airBudget, token.decimals)} off{token.tokenSymbol}
                                 </span>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -244,7 +244,7 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
                                     >MAX</button>
                                 </div>
                                 <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.25)" }}>
-                                    Burns your q{token.tokenSymbol} to mint a{token.tokenSymbol} Air Bags
+                                    Burns your q{token.tokenSymbol} to mint off{token.tokenSymbol}
                                 </p>
                             </div>
                         )}
@@ -291,7 +291,7 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
                             ) : subMode === "fund" ? (
                                 <><ArrowUpIcon size={16} /> Mint</>
                             ) : (
-                                <><RefreshCwIcon size={16} /> Reclaim Air Bags</>
+                                <><RefreshCwIcon size={16} /> Reclaim off{token.tokenSymbol}</>
                             )}
                         </button>
 

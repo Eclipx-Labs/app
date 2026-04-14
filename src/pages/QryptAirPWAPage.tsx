@@ -499,18 +499,18 @@ function SendForm({
 
             const effectiveBudget = effectiveSelected?.airBudget ?? 0n;
             if (effectiveBudget === 0n) {
-                setError(`No remaining budget — all funds are locked in pending vouchers.`);
+                setError(`No remaining budget. All funds are locked in pending offTokens.`);
                 setLoading(false); return;
             }
             if (parsedAmount > effectiveBudget) {
-                setError(`Only ${maxAmount} ${selectedToken.tokenSymbol} available (pending vouchers deducted).`);
+                setError(`Only ${maxAmount} ${selectedToken.tokenSymbol} available. Pending offTokens have been deducted.`);
                 setLoading(false); return;
             }
 
             const deadline = Math.floor(addDays(new Date(), deadlineDays).getTime() / 1000);
             const nonce = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
                 .map(b => b.toString(16).padStart(2, "0")).join("")}` as `0x${string}`;
-            // Auto-generate transfer code — embedded in QR payload so claimer needs no separate secret
+            // Auto-generate transfer code, embedded in QR payload so claimer needs no separate secret
             const rawTransferCode = Array.from(crypto.getRandomValues(new Uint8Array(16)))
                 .map(b => b.toString(16).padStart(2, "0")).join("");
             const transferCodeHash = keccak256(toBytes(rawTransferCode));
@@ -663,7 +663,7 @@ function SendForm({
             }}>
                 <ShieldCheckIcon size={11} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
                 <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>
-                    Transfer code auto-generated and embedded in QR. Recipient scans and signs — no separate secret needed.
+                    Transfer code auto-generated and embedded in QR. Recipient scans and signs. No separate secret needed.
                 </p>
             </div>
 
@@ -685,7 +685,7 @@ function SendForm({
                     background: "rgba(74,222,128,0.07)", border: "1px solid rgba(74,222,128,0.2)",
                 }}>
                     <CheckCircle2Icon size={11} color="#4ade80" />
-                    <p style={{ margin: 0, fontSize: 11, color: "#4ade80" }}>Voucher created</p>
+                    <p style={{ margin: 0, fontSize: 11, color: "#4ade80" }}>off{selectedToken?.tokenSymbol} created</p>
                 </div>
             )}
 
@@ -705,7 +705,7 @@ function SendForm({
             >
                 {loading
                     ? <><Loader2Icon size={13} style={{ animation: "spin 1s linear infinite" }} /> Signing...</>
-                    : <><SendIcon size={13} /> Generate Voucher</>
+                    : <><SendIcon size={13} /> Send off{selectedToken?.tokenSymbol ?? "Token"}</>
                 }
             </button>
 
@@ -777,7 +777,7 @@ function LandingCard({ onEnter, isOnline }: { onEnter: () => void; isOnline: boo
                 </p>
                 <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.4 }}>
                     {isOnline
-                        ? "Turn off WiFi or mobile data before creating vouchers."
+                        ? "Turn off WiFi or mobile data before creating offTokens."
                         : "MetaMask signs locally. No data leaves your device."}
                 </p>
             </div>
@@ -1259,9 +1259,9 @@ export default function QryptAirPWAPage() {
 
             {history.length === 0 ? (
                 <div style={{ textAlign: "center", paddingTop: 60 }}>
-                    <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 13, margin: 0 }}>No vouchers yet</p>
+                    <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 13, margin: 0 }}>No offTokens yet</p>
                     <p style={{ color: "rgba(255,255,255,0.1)", fontSize: 11, margin: "6px 0 0" }}>
-                        Generated vouchers appear here
+                        Generated offTokens appear here
                     </p>
                 </div>
             ) : (
