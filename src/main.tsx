@@ -14,7 +14,10 @@ const startTime = (window as any).__SPLASH_START__ as number ?? Date.now();
 const skipSplash = (window as any).__SPLASH_SKIP__ as boolean ?? false;
 
 async function fetchAndInitAppKit(): Promise<void> {
-    const base = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
+    // VITE_API_BASE = "https://qryptum-api.up.railway.app" (no /api suffix)
+    // Railway Express mounts routes at /api, so append it here.
+    const rawBase = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
+    const base = rawBase ? `${rawBase}/api` : null;
     if (base) {
         try {
             const res = await fetch(`${base}/config`, { signal: AbortSignal.timeout(3000) });

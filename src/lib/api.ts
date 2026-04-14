@@ -1,7 +1,8 @@
-// In production (GitHub Pages / IPFS), VITE_API_BASE points to the deployed API server.
-// In development (Replit), falls back to the local relative path.
-const BASE = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "")
-    ?? `${import.meta.env.BASE_URL}api`;
+// In production, VITE_API_BASE = "https://qryptum-api.up.railway.app"
+// The Railway Express server mounts all routes under /api, so we append it here.
+// In development (no VITE_API_BASE), the Vite proxy handles /api → local server.
+const _rawBase = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
+const BASE = _rawBase ? `${_rawBase}/api` : `${import.meta.env.BASE_URL}api`;
 
 export async function fetchVault(walletAddress: string) {
     const res = await fetch(`${BASE}/vaults/${walletAddress}`);
