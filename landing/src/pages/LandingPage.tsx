@@ -25,6 +25,16 @@ function SpiralBg() {
     resize();
     window.addEventListener("resize", resize);
 
+    // Large flowing liquid ribbon bands
+    // Each ribbon: center Y, wave amplitude, half-width, color, wave frequency, flow speed, start phase
+    const ribbons = [
+      { cy: 0.28, amp: 0.30, hw: 0.175, r: 6,   g: 182, b: 212, freq: 0.55, spd: 1.10, ph: 0.0  },
+      { cy: 0.50, amp: 0.32, hw: 0.190, r: 20,  g: 184, b: 166, freq: 0.50, spd: 0.85, ph: 2.09 },
+      { cy: 0.38, amp: 0.28, hw: 0.160, r: 99,  g: 102, b: 241, freq: 0.60, spd: 1.25, ph: 4.19 },
+      { cy: 0.62, amp: 0.26, hw: 0.155, r: 14,  g: 165, b: 233, freq: 0.48, spd: 0.95, ph: 1.05 },
+      { cy: 0.18, amp: 0.33, hw: 0.145, r: 56,  g: 189, b: 248, freq: 0.65, spd: 1.40, ph: 3.14 },
+    ];
+
     function draw() {
       const W = canvas.width;
       const H = canvas.height;
@@ -32,56 +42,55 @@ function SpiralBg() {
       ctx.fillStyle = "#020810";
       ctx.fillRect(0, 0, W, H);
 
-      const cx = W * 0.62;
-      const cy = H * 0.44;
-      const maxR = Math.max(W, H) * 0.68;
-      const turns = 3.2;
-      const steps = 900;
-      const numArms = 2;
+      for (const rb of ribbons) {
+        const amp   = rb.amp * H;
+        const hw    = rb.hw  * H;
+        const baseY = rb.cy  * H;
+        const phase = t * rb.spd + rb.ph;
 
-      for (let arm = 0; arm < numArms; arm++) {
-        const armOffset = (arm / numArms) * Math.PI * 2;
+        // Build top and bottom edge points of the ribbon
+        const segs = Math.ceil(W / 3) + 2;
+        const topX: number[] = [];
+        const topY: number[] = [];
+        const botX: number[] = [];
+        const botY: number[] = [];
 
-        for (let pass = 0; pass < 3; pass++) {
-          const phaseNudge = pass * 0.18;
-          const alphaScale = 1 - pass * 0.28;
-          const widthScale = 1 - pass * 0.2;
-
-          ctx.beginPath();
-          let first = true;
-          for (let i = 0; i <= steps; i++) {
-            const frac = i / steps;
-            const r = frac * maxR;
-            const angle =
-              frac * turns * Math.PI * 2 + armOffset + t + phaseNudge;
-            const x = cx + r * Math.cos(angle);
-            const y = cy + r * Math.sin(angle);
-            if (first) { ctx.moveTo(x, y); first = false; }
-            else ctx.lineTo(x, y);
-          }
-
-          const grad = ctx.createLinearGradient(cx, cy, cx + maxR * 0.7, cy + maxR * 0.3);
-          grad.addColorStop(0,   `rgba(6,182,212,${0.72 * alphaScale})`);
-          grad.addColorStop(0.3, `rgba(14,165,233,${0.45 * alphaScale})`);
-          grad.addColorStop(0.6, `rgba(56,189,248,${0.2 * alphaScale})`);
-          grad.addColorStop(1,   `rgba(2,8,16,0)`);
-
-          ctx.strokeStyle = grad;
-          ctx.lineWidth = (2.4 - pass * 0.5) * widthScale;
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-          ctx.stroke();
+        for (let i = 0; i <= segs; i++) {
+          const x = (i / segs) * (W + 100) - 50;
+          const wave = amp * Math.sin((x / W) * rb.freq * Math.PI * 2 + phase);
+          topX.push(x); topY.push(baseY + wave - hw);
+          botX.push(x); botY.push(baseY + wave + hw);
         }
+
+        // Fill the ribbon shape
+        ctx.beginPath();
+        ctx.moveTo(topX[0], topY[0]);
+        for (let i = 1; i <= segs; i++) {
+          const mx = (topX[i - 1] + topX[i]) / 2;
+          const my = (topY[i - 1] + topY[i]) / 2;
+          ctx.quadraticCurveTo(topX[i - 1], topY[i - 1], mx, my);
+        }
+        for (let i = segs; i >= 1; i--) {
+          const mx = (botX[i] + botX[i - 1]) / 2;
+          const my = (botY[i] + botY[i - 1]) / 2;
+          ctx.quadraticCurveTo(botX[i], botY[i], mx, my);
+        }
+        ctx.closePath();
+
+        // Gradient: transparent at ribbon edges, opaque in center
+        const midYApprox = baseY + amp * Math.sin(0.5 * rb.freq * Math.PI * 2 + phase);
+        const grad = ctx.createLinearGradient(0, midYApprox - hw, 0, midYApprox + hw);
+        grad.addColorStop(0,    `rgba(${rb.r},${rb.g},${rb.b},0)`);
+        grad.addColorStop(0.18, `rgba(${rb.r},${rb.g},${rb.b},0.28)`);
+        grad.addColorStop(0.5,  `rgba(${rb.r},${rb.g},${rb.b},0.50)`);
+        grad.addColorStop(0.82, `rgba(${rb.r},${rb.g},${rb.b},0.28)`);
+        grad.addColorStop(1,    `rgba(${rb.r},${rb.g},${rb.b},0)`);
+
+        ctx.fillStyle = grad;
+        ctx.fill();
       }
 
-      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 220);
-      grd.addColorStop(0,   "rgba(6,182,212,0.18)");
-      grd.addColorStop(0.4, "rgba(14,165,233,0.06)");
-      grd.addColorStop(1,   "transparent");
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, W, H);
-
-      t += 0.0032;
+      t += 0.018; // flow speed — visible right-to-left movement
       animId = requestAnimationFrame(draw);
     }
 
