@@ -46,7 +46,7 @@ jobs:
           node-version: '24'
 
       # ── 1. BUILD LANDING ─────────────────────────────────────────────
-      # Output: landing/dist/public/
+      # outDir = landing/dist/public/ (path.resolve(__dirname, 'dist/public'))
       - name: Install landing dependencies
         working-directory: landing
         run: pnpm install --no-frozen-lockfile
@@ -55,11 +55,17 @@ jobs:
         working-directory: landing
         env:
           NODE_ENV: production
+          PORT: '3000'
           BASE_PATH: /app/
         run: pnpm run build
 
+      - name: Check landing output
+        run: |
+          echo "=== landing/dist/ ===" && ls landing/dist/ 2>/dev/null || echo "MISSING: landing/dist/"
+          echo "=== landing/dist/public/ ===" && ls landing/dist/public/ 2>/dev/null | head -10 || echo "MISSING: landing/dist/public/"
+
       # ── 2. BUILD SHIELD ──────────────────────────────────────────────
-      # Output: dist/public/ (repo root)
+      # outDir = dist/public/ (repo root)
       - name: Install shield-app dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -73,8 +79,11 @@ jobs:
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
         run: pnpm run build
 
+      - name: Check shield output
+        run: |
+          echo "=== dist/public/ ===" && ls dist/public/ 2>/dev/null | head -10 || echo "MISSING: dist/public/"
+
       # ── 3. BUILD QRYPTAIR ────────────────────────────────────────────
-      # Output: _qryptair/dist/ or _qryptair/dist/public/
       - name: Install qryptair dependencies
         working-directory: _qryptair
         run: pnpm install --no-frozen-lockfile
@@ -89,27 +98,37 @@ jobs:
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
         run: pnpm run build
 
+      - name: Check qryptair output
+        run: |
+          echo "=== _qryptair/dist* ===" && ls _qryptair/dist* 2>/dev/null | head -10 || true
+          echo "=== _qryptair/dist/ ===" && ls _qryptair/dist/ 2>/dev/null | head -10 || echo "MISSING: _qryptair/dist/"
+          echo "=== _qryptair/dist/public/ ===" && ls _qryptair/dist/public/ 2>/dev/null | head -5 || echo "no dist/public"
+
       # ── 4. ASSEMBLE FINAL PAGES DIRECTORY ───────────────────────────
-      # _pages/            = landing  (served at /app/)
-      # _pages/app/        = shield   (served at /app/app/)
-      # _pages/qryptair/   = qryptair (served at /app/qryptair/)
       - name: Assemble pages output
         run: |
+          set -euo pipefail
           mkdir -p _pages/app _pages/qryptair
 
           # Shield -> _pages/app/
+          echo "--- Copying shield to _pages/app/ ---"
           cp -r dist/public/. _pages/app/
 
           # QryptAir -> _pages/qryptair/
-          # Support either dist/public/ or dist/ as outdir
+          echo "--- Copying qryptair to _pages/qryptair/ ---"
           if [ -d "_qryptair/dist/public" ]; then
             cp -r _qryptair/dist/public/. _pages/qryptair/
           else
             cp -r _qryptair/dist/. _pages/qryptair/
           fi
 
-          # Landing -> _pages/ (must be LAST to avoid being overwritten)
-          cp -r landing/dist/public/. _pages/
+          # Landing -> _pages/ (LAST so it goes to root, not overwritten)
+          echo "--- Copying landing to _pages/ ---"
+          if [ -d "landing/dist/public" ]; then
+            cp -r landing/dist/public/. _pages/
+          else
+            cp -r landing/dist/. _pages/
+          fi
 
           # SPA 404 fallback
           cp _pages/index.html _pages/404.html
