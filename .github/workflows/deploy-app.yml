@@ -29,12 +29,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout qryptair repo (public)
-        uses: actions/checkout@v4
-        with:
-          repository: Qryptumorg/qryptair
-          path: _qryptair
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -46,7 +40,6 @@ jobs:
           node-version: '24'
 
       # ── 1. BUILD LANDING ─────────────────────────────────────────────
-      # outDir = landing/dist/public/ (path.resolve(__dirname, 'dist/public'))
       - name: Install landing dependencies
         working-directory: landing
         run: pnpm install --no-frozen-lockfile
@@ -59,13 +52,7 @@ jobs:
           BASE_PATH: /app/
         run: pnpm run build
 
-      - name: Check landing output
-        run: |
-          echo "=== landing/dist/ ===" && ls landing/dist/ 2>/dev/null || echo "MISSING: landing/dist/"
-          echo "=== landing/dist/public/ ===" && ls landing/dist/public/ 2>/dev/null | head -10 || echo "MISSING: landing/dist/public/"
-
       # ── 2. BUILD SHIELD ──────────────────────────────────────────────
-      # outDir = dist/public/ (repo root)
       - name: Install shield-app dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -79,51 +66,35 @@ jobs:
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
         run: pnpm run build
 
-      - name: Check shield output
-        run: |
-          echo "=== dist/public/ ===" && ls dist/public/ 2>/dev/null | head -10 || echo "MISSING: dist/public/"
-
-      # ── 3. BUILD QRYPTAIR ────────────────────────────────────────────
-      - name: Install qryptair dependencies
-        working-directory: _qryptair
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build QryptAir (base = /app/qryptair/)
-        working-directory: _qryptair
-        env:
-          NODE_ENV: production
-          PORT: '3001'
-          BASE_PATH: /app/qryptair/
-          VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
-          VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
-        run: pnpm run build
-
-      - name: Check qryptair output
-        run: |
-          echo "=== _qryptair/dist* ===" && ls _qryptair/dist* 2>/dev/null | head -10 || true
-          echo "=== _qryptair/dist/ ===" && ls _qryptair/dist/ 2>/dev/null | head -10 || echo "MISSING: _qryptair/dist/"
-          echo "=== _qryptair/dist/public/ ===" && ls _qryptair/dist/public/ 2>/dev/null | head -5 || echo "no dist/public"
-
-      # ── 4. ASSEMBLE FINAL PAGES DIRECTORY ───────────────────────────
+      # ── 3. ASSEMBLE PAGES ────────────────────────────────────────────
+      # _pages/            = landing  -> /app/
+      # _pages/app/        = shield   -> /app/app/
+      # _pages/qryptair/   = redirect -> qryptumorg.github.io/qryptair/
       - name: Assemble pages output
         run: |
           set -euo pipefail
           mkdir -p _pages/app _pages/qryptair
 
           # Shield -> _pages/app/
-          echo "--- Copying shield to _pages/app/ ---"
           cp -r dist/public/. _pages/app/
 
-          # QryptAir -> _pages/qryptair/
-          echo "--- Copying qryptair to _pages/qryptair/ ---"
-          if [ -d "_qryptair/dist/public" ]; then
-            cp -r _qryptair/dist/public/. _pages/qryptair/
-          else
-            cp -r _qryptair/dist/. _pages/qryptair/
-          fi
+          # QryptAir: redirect to its own standalone GitHub Pages deployment
+          cat > _pages/qryptair/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>QryptAir – Redirecting...</title>
+            <meta http-equiv="refresh" content="0; url=https://qryptumorg.github.io/qryptair/">
+            <link rel="canonical" href="https://qryptumorg.github.io/qryptair/">
+          </head>
+          <body>
+            <script>window.location.replace("https://qryptumorg.github.io/qryptair/");</script>
+          </body>
+          </html>
+          EOF
 
-          # Landing -> _pages/ (LAST so it goes to root, not overwritten)
-          echo "--- Copying landing to _pages/ ---"
+          # Landing -> _pages/ (LAST so it's not overwritten)
           if [ -d "landing/dist/public" ]; then
             cp -r landing/dist/public/. _pages/
           else
