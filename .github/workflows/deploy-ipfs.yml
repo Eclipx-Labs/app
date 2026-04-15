@@ -94,7 +94,6 @@ jobs:
         run: pnpm run build
 
       # -- 5. BUILD SITE ----------------------------------------------------
-      # base = /site/  ->  qryptum.eth.limo/site/
       - name: Install site dependencies
         working-directory: _site
         run: pnpm install --no-frozen-lockfile
@@ -107,11 +106,6 @@ jobs:
         run: pnpm run build
 
       # -- 6. ASSEMBLE dist/ ------------------------------------------------
-      # dist/           = landing  (qryptum.eth.limo/)
-      # dist/app/       = shield   (qryptum.eth.limo/app/)
-      # dist/qryptair/  = qryptair (qryptum.eth.limo/qryptair/)
-      # dist/docs/      = docs     (qryptum.eth.limo/docs/)
-      # dist/site/      = site     (qryptum.eth.limo/site/)
       - name: Assemble combined dist/
         run: |
           set -euo pipefail
@@ -139,9 +133,16 @@ jobs:
           find dist -maxdepth 2 -type d
           du -sh dist
 
-      # -- 7. UPLOAD TO PINATA ----------------------------------------------
-      - name: Upload to Pinata IPFS
+      # -- 7. INSTALL ENS UPDATE DEPS ---------------------------------------
+      - name: Install ENS update dependencies
+        working-directory: .github/scripts
+        run: npm install ethers @ensdomains/content-hash
+
+      # -- 8. UPLOAD TO PINATA + UPDATE ENS ---------------------------------
+      - name: Upload to Pinata IPFS and update ENS
         env:
           PINATA_JWT: ${{ secrets.PINATA_JWT }}
           COMMIT_SHA: ${{ github.sha }}
+          ENS_PRIVATE_KEY: ${{ secrets.ENS_PRIVATE_KEY }}
+          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
         run: node .github/scripts/pinata-upload.mjs
