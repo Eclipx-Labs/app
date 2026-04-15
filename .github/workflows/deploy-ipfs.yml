@@ -36,9 +36,6 @@ jobs:
           VITE_DEPLOY_TARGET: app
           VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
-          VITE_PROOF_SALT: ${{ secrets.VITE_PROOF_SALT }}
-          VITE_SHIELD_FACTORY_SEPOLIA: ${{ secrets.VITE_SHIELD_FACTORY_SEPOLIA }}
-          VITE_SHIELD_FACTORY_V6_SEPOLIA: ${{ secrets.VITE_SHIELD_FACTORY_V6_SEPOLIA }}
         run: |
           pnpm run build
           echo "=== Build size (excl .map) ==="
