@@ -327,6 +327,32 @@ export default function DashboardPage() {
         prevModal.current = activeModal;
     }, [activeModal, refetchTx]);
 
+    // BroadcastChannel: listen for events from the /qryptair tab
+    useEffect(() => {
+        if (!address) return;
+        let bc: BroadcastChannel | null = null;
+        try {
+            bc = new BroadcastChannel("qryptum-sync");
+            bc.onmessage = (e) => {
+                const msg = e.data;
+                if (!msg || msg.address !== address.toLowerCase()) return;
+                if (msg.type === "VOUCHER_CREATED") refetchTx();
+                if (msg.type === "CLAIM_SUCCESS") { refetchTx(); refetchBalances(); }
+            };
+        } catch {}
+        return () => { try { bc?.close(); } catch {} };
+    }, [address, refetchTx, refetchBalances]);
+
+    // Wrapper: refetch airBudgets AND broadcast MINT_SUCCESS to /qryptair tab
+    const handleMintSuccess = useCallback(() => {
+        refetchAirBudgets();
+        try {
+            const bc = new BroadcastChannel("qryptum-sync");
+            bc.postMessage({ type: "MINT_SUCCESS", address: address?.toLowerCase(), chainId });
+            bc.close();
+        } catch {}
+    }, [refetchAirBudgets, address, chainId]);
+
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
         check();
@@ -388,7 +414,7 @@ export default function DashboardPage() {
         transactions,
         refetchData: refetchTx,
         refetchBalances,
-        refetchAirBudgets,
+        refetchAirBudgets: handleMintSuccess,
         activeUnshieldToken,
         setActiveUnshieldToken,
         activeShieldToken,
