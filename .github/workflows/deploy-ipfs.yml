@@ -90,6 +90,7 @@ jobs:
         working-directory: _docs
         env:
           NODE_ENV: production
+          VITE_API_BASE_URL: https://secdocs.replit.app
         run: pnpm run build
 
       # ── 5. ASSEMBLE dist/ ────────────────────────────────────────────
