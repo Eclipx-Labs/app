@@ -15,12 +15,11 @@ jobs:
       - name: Checkout app repo
         uses: actions/checkout@v4
 
-      - name: Checkout qryptair repo
+      - name: Checkout qryptair repo (public)
         uses: actions/checkout@v4
         with:
           repository: Qryptumorg/qryptair
           path: _qryptair
-          token: ${{ secrets.QRYPTAIR_REPO_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
