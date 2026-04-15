@@ -1,5 +1,4 @@
 import { useRef, useEffect } from "react";
-import qLogo from "@/assets/qryptum-q.png";
 import appIcon from "@/assets/icon-app.png";
 import logoRailgun from "@/assets/logo-railgun.png";
 import logoEthereum from "@/assets/logo-ethereum.png";
@@ -8,6 +7,8 @@ import logoReown from "@/assets/logo-reown.png";
 import logoEns from "@/assets/logo-ens.png";
 import logoPinata from "@/assets/logo-pinata.png";
 import logoEthlimo from "@/assets/logo-ethlimo.png";
+
+const qLogo = import.meta.env.BASE_URL + "logo.svg";
 
 function SpiralBg() {
   const ref = useRef<HTMLCanvasElement>(null);
