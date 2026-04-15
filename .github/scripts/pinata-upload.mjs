@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { createRequire } from 'module';
 
 function getFiles(dir, base) {
   if (!base) base = dir;
@@ -14,6 +13,32 @@ function getFiles(dir, base) {
     }
   }
   return out;
+}
+
+// Encode IPFS CIDv1 (bafy...) to ENS contenthash hex - no external deps needed
+function ipfsCidToContenthash(cid) {
+  if (cid.startsWith('Qm')) {
+    // CIDv0: base58 -> multihash bytes, prepend 0xe3 0x01 0x00 0x...
+    const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let n = 0n;
+    for (const c of cid) n = n * 58n + BigInt(B58.indexOf(c));
+    const hex = n.toString(16).padStart(68, '0');
+    return '0xe30100' + hex;
+  }
+  // CIDv1 base32 (starts with 'b')
+  const alpha = 'abcdefghijklmnopqrstuvwxyz234567';
+  const str = cid.toLowerCase().slice(1);
+  let bits = 0, val = 0;
+  const bytes = [];
+  for (const c of str) {
+    const idx = alpha.indexOf(c);
+    if (idx < 0) throw new Error('Bad base32 char: ' + c);
+    val = (val << 5) | idx;
+    bits += 5;
+    if (bits >= 8) { bytes.push((val >> (bits - 8)) & 0xff); bits -= 8; }
+  }
+  const prefix = Buffer.from([0xe3, 0x01]);
+  return '0x' + Buffer.concat([prefix, Buffer.from(bytes)]).toString('hex');
 }
 
 const jwt = process.env.PINATA_JWT;
@@ -36,7 +61,7 @@ for (const pin of oldPins) {
   console.log('Deleted', pin.ipfs_pin_hash, '->', delRes.status);
 }
 
-// --- 2. Upload new bundle ---
+// --- 2. Upload ---
 const entries = getFiles('./dist');
 let totalBytes = 0;
 const data = new FormData();
@@ -77,13 +102,11 @@ console.log('CID    :', cid);
 console.log('ipfs://' + cid);
 console.log('===============================');
 
-// --- 3. Update ENS contenthash ---
+// --- 3. Update ENS contenthash on-chain ---
 if (process.env.ENS_PRIVATE_KEY && process.env.MAINNET_RPC_URL) {
   console.log('\nUpdating ENS contenthash for qryptum.eth...');
   try {
     const { ethers } = await import('ethers');
-    const require = createRequire(import.meta.url);
-    const contentHash = require('@ensdomains/content-hash');
 
     const privateKey = process.env.ENS_PRIVATE_KEY.startsWith('0x')
       ? process.env.ENS_PRIVATE_KEY
@@ -91,15 +114,13 @@ if (process.env.ENS_PRIVATE_KEY && process.env.MAINNET_RPC_URL) {
 
     const provider = new ethers.JsonRpcProvider(process.env.MAINNET_RPC_URL);
     const wallet = new ethers.Wallet(privateKey, provider);
-    console.log('Operator wallet:', wallet.address);
+    console.log('Operator:', wallet.address);
 
-    const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e';
     const registry = new ethers.Contract(
-      ENS_REGISTRY,
+      '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
       ['function resolver(bytes32 node) view returns (address)'],
       provider
     );
-
     const node = ethers.namehash('qryptum.eth');
     const resolverAddr = await registry.resolver(node);
     console.log('Resolver:', resolverAddr);
@@ -110,35 +131,35 @@ if (process.env.ENS_PRIVATE_KEY && process.env.MAINNET_RPC_URL) {
       wallet
     );
 
-    const encoded = '0x' + contentHash.encode('ipfs', cid);
+    const encoded = ipfsCidToContenthash(cid);
+    console.log('Contenthash:', encoded.slice(0, 20) + '...');
+
     const tx = await resolver.setContenthash(node, encoded);
-    console.log('TX sent:', tx.hash);
+    console.log('TX:', tx.hash);
     const receipt = await tx.wait();
-    console.log('ENS contenthash updated! Block:', receipt.blockNumber);
-    console.log('qryptum.eth now points to ipfs://' + cid);
+    console.log('ENS updated! Block:', receipt.blockNumber);
+    console.log('qryptum.eth -> ipfs://' + cid);
   } catch (err) {
     console.error('ENS update failed (non-fatal):', err.message);
   }
 } else {
-  console.log('Skipping ENS update - secrets not configured');
+  console.log('Skipping ENS update - ENS_PRIVATE_KEY or MAINNET_RPC_URL not set');
 }
 
 const summary = [
   '## IPFS Deploy - Qryptum Hub',
-  '',
   '| | |',
   '|---|---|',
   '| **CID** | `' + cid + '` |',
   '| **Commit** | `' + sha + '` |',
-  '| **IPFS** | ipfs://' + cid + ' |',
+  '| **IPFS** | `ipfs://' + cid + '` |',
   '| **eth.limo** | https://qryptum.eth.limo |',
   '',
-  '### Sub-paths',
   '| Path | App |',
   '|---|---|',
-  '| `/` | Landing Hub |',
-  '| `/app` | ShieldTransfer dApp |',
-  '| `/qryptair` | QryptAir PWA |',
+  '| `/` | Landing |',
+  '| `/app` | ShieldTransfer |',
+  '| `/qryptair` | QryptAir |',
   '| `/docs` | Docs |',
   '| `/site` | Site |',
 ].join('\n');
