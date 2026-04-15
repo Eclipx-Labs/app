@@ -117,6 +117,7 @@ export default function LandingPage() {
       label: "Website",
       sub: "qryptum.org",
       href: "https://qryptum.org",
+      newTab: true,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -129,6 +130,7 @@ export default function LandingPage() {
       label: "App",
       sub: "qryptum.eth.limo/app",
       href: "https://qryptum.eth.limo/app",
+      newTab: false,
       icon: (
         <img
           src={appIcon}
@@ -147,6 +149,7 @@ export default function LandingPage() {
       label: "Docs",
       sub: "qryptumorg.github.io/docs",
       href: "https://qryptumorg.github.io/docs",
+      newTab: true,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -162,6 +165,7 @@ export default function LandingPage() {
       label: "GitHub",
       sub: "github.com/Qryptumorg",
       href: "https://github.com/Qryptumorg",
+      newTab: true,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
@@ -173,6 +177,7 @@ export default function LandingPage() {
       label: "Twitter",
       sub: "@qryptumorg",
       href: "https://x.com/qryptumorg",
+      newTab: true,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -184,6 +189,7 @@ export default function LandingPage() {
       label: "Telegram",
       sub: "t.me/qryptumorg",
       href: "https://t.me/qryptumorg",
+      newTab: true,
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.288 14.617l-2.95-.924c-.64-.203-.653-.64.135-.95l11.57-4.461c.535-.194 1.002.13.519.966z" />
@@ -284,7 +290,7 @@ export default function LandingPage() {
 
           <div className="qr-grid">
             {cards.map((card) => (
-              <a key={card.id} href={card.href} target="_blank" rel="noopener noreferrer" className="qr-card">
+              <a key={card.id} href={card.href} {...(card.newTab ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="qr-card">
                 <span style={{ color: "#38bdf8" }}>{card.icon}</span>
                 <div>
                   <div style={{ fontSize: "14px", fontWeight: 600, color: "#e0f2fe", marginBottom: "3px" }}>
