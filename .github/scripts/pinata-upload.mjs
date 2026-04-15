@@ -18,6 +18,24 @@ function getFiles(dir, base) {
 const jwt = process.env.PINATA_JWT;
 const sha = (process.env.COMMIT_SHA || 'unknown').slice(0, 7);
 const folder = 'qryptum-hub-' + sha;
+
+// --- 1. Delete all old qryptum-hub pins to free up file count ---
+console.log('Fetching existing pins to clean up...');
+const listRes = await fetch('https://api.pinata.cloud/pinning/pinList?status=pinned&pageLimit=1000', {
+  headers: { Authorization: 'Bearer ' + jwt },
+});
+const listData = await listRes.json();
+const oldPins = (listData.rows || []).filter(p => p.metadata?.name?.startsWith('qryptum-hub-'));
+console.log('Old pins to delete:', oldPins.length);
+for (const pin of oldPins) {
+  const delRes = await fetch('https://api.pinata.cloud/pinning/unpin/' + pin.ipfs_pin_hash, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + jwt },
+  });
+  console.log('Deleted', pin.ipfs_pin_hash, '->', delRes.status);
+}
+
+// --- 2. Upload new bundle ---
 const entries = getFiles('./dist');
 
 let totalBytes = 0;
@@ -60,11 +78,6 @@ console.log('');
 console.log('===== IPFS Upload Success =====');
 console.log('CID    :', cid);
 console.log('');
-console.log('Routes after ENS update:');
-console.log('  /          -> qryptum.eth.limo (Landing)');
-console.log('  /app       -> qryptum.eth.limo/app (ShieldTransfer)');
-console.log('  /qryptair  -> qryptum.eth.limo/qryptair (QryptAir)');
-console.log('');
 console.log('Set ENS contenthash on qryptum.eth: ipfs://' + cid);
 console.log('===============================');
 
@@ -83,6 +96,8 @@ const summary = [
   '| / | Landing Hub |',
   '| /app | ShieldTransfer dApp |',
   '| /qryptair | QryptAir PWA |',
+  '| /docs | Docs |',
+  '| /site | Site |',
   '',
   '### Next step: Update qryptum.eth contenthash',
   '1. Go to https://app.ens.domains/qryptum.eth',
