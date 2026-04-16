@@ -29,7 +29,7 @@ export default function UnshieldPanel({ vaultAddress, walletAddress, chainId, va
     const [showPassword, setShowPassword] = useState(false);
     const [deriving, setDeriving] = useState(false);
     const { pushTx } = useTxStatus();
-    const publicClient = usePublicClient();
+    const publicClient = usePublicClient({ chainId });
 
     const isV6 = vaultVersion === "v6";
 
