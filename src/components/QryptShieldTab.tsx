@@ -129,8 +129,27 @@ interface QryptShieldTabProps {
     p: SharedPropsMin;
 }
 
+function mergeWithLocalStorage(rows: RailgunPendingData[], address: string, chainId: number): RailgunPendingData[] {
+    try {
+        const lsKey = `qryptum:railgun:pending:${address.toLowerCase()}:${chainId}`;
+        const raw = localStorage.getItem(lsKey);
+        if (!raw) return rows;
+        const lsEntry: RailgunPendingData = JSON.parse(raw);
+        const alreadyInRows = rows.some(r => r.tokenAddress.toLowerCase() === lsEntry.tokenAddress.toLowerCase());
+        return alreadyInRows ? rows : [lsEntry, ...rows];
+    } catch { return rows; }
+}
+
 export function QryptShieldTabDesktop({ p }: QryptShieldTabProps) {
-    const [pending, setPending] = useState<RailgunPendingData[]>([]);
+    const [pending, setPending] = useState<RailgunPendingData[]>(() => {
+        // Fast local seed from localStorage on first render
+        if (!p.address) return [];
+        try {
+            const lsKey = `qryptum:railgun:pending:${p.address.toLowerCase()}:${p.chainId}`;
+            const raw = localStorage.getItem(lsKey);
+            return raw ? [JSON.parse(raw)] : [];
+        } catch { return []; }
+    });
     const [loading, setLoading] = useState(true);
     const [selectedPending, setSelectedPending] = useState<RailgunPendingData | null>(null);
 
@@ -146,12 +165,24 @@ export function QryptShieldTabDesktop({ p }: QryptShieldTabProps) {
     async function loadPending() {
         if (!p.address) { setLoading(false); return; }
         setLoading(true);
-        const rows = await fetchRailgunPending(p.address, p.chainId);
-        setPending(rows);
-        setLoading(false);
+        try {
+            const rows = await fetchRailgunPending(p.address, p.chainId);
+            setPending(mergeWithLocalStorage(rows, p.address, p.chainId));
+        } catch {
+            // Server failed - fall back to localStorage only
+            setPending(mergeWithLocalStorage([], p.address, p.chainId));
+        } finally {
+            setLoading(false);
+        }
     }
 
     useEffect(() => { loadPending(); }, [p.address, p.chainId]);
+
+    // Auto-refresh every 30s to catch mid-flight transfers
+    useEffect(() => {
+        const id = setInterval(() => { if (p.address) loadPending(); }, 30_000);
+        return () => clearInterval(id);
+    }, [p.address, p.chainId]);
 
     const gateKey = selectedPending ? selectedPending.tokenAddress : (p.tokensWithBalances[0]?.tokenAddress ?? "none");
 
@@ -213,7 +244,14 @@ export function QryptShieldTabDesktop({ p }: QryptShieldTabProps) {
 }
 
 export function QryptShieldTabMobile({ p }: QryptShieldTabProps) {
-    const [pending, setPending] = useState<RailgunPendingData[]>([]);
+    const [pending, setPending] = useState<RailgunPendingData[]>(() => {
+        if (!p.address) return [];
+        try {
+            const lsKey = `qryptum:railgun:pending:${p.address.toLowerCase()}:${p.chainId}`;
+            const raw = localStorage.getItem(lsKey);
+            return raw ? [JSON.parse(raw)] : [];
+        } catch { return []; }
+    });
     const [loading, setLoading] = useState(true);
     const [selectedPending, setSelectedPending] = useState<RailgunPendingData | null>(null);
     const [showForm, setShowForm] = useState(false);
@@ -221,12 +259,22 @@ export function QryptShieldTabMobile({ p }: QryptShieldTabProps) {
     async function loadPending() {
         if (!p.address) { setLoading(false); return; }
         setLoading(true);
-        const rows = await fetchRailgunPending(p.address, p.chainId);
-        setPending(rows);
-        setLoading(false);
+        try {
+            const rows = await fetchRailgunPending(p.address, p.chainId);
+            setPending(mergeWithLocalStorage(rows, p.address, p.chainId));
+        } catch {
+            setPending(mergeWithLocalStorage([], p.address, p.chainId));
+        } finally {
+            setLoading(false);
+        }
     }
 
     useEffect(() => { loadPending(); }, [p.address, p.chainId]);
+
+    useEffect(() => {
+        const id = setInterval(() => { if (p.address) loadPending(); }, 30_000);
+        return () => clearInterval(id);
+    }, [p.address, p.chainId]);
 
     const gateKey = selectedPending ? selectedPending.tokenAddress : "new";
 
