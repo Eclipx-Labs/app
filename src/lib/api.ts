@@ -75,14 +75,14 @@ export async function broadcastUnshieldTx(params: {
             body: JSON.stringify(params),
         });
     } catch {
-        // Network error (offline, no backend) → fallback to direct wallet
+        // Network error (offline, no backend) - fallback to direct wallet
         const err = new Error("Broadcaster unreachable");
         (err as Error & { fallback?: boolean }).fallback = true;
         throw err;
     }
 
     // Static hosts (GitHub Pages / IPFS) return 404/405 with non-JSON body
-    // when no backend is present → fallback to direct wallet submit
+    // when no backend is present - fallback to direct wallet submit
     if (res.status === 404 || res.status === 405 || res.status === 0) {
         const err = new Error("Broadcaster not available");
         (err as Error & { fallback?: boolean }).fallback = true;
@@ -93,7 +93,7 @@ export async function broadcastUnshieldTx(params: {
     try {
         json = await res.json();
     } catch {
-        // Non-JSON response (e.g. "Method Not Allowed" plain text) → fallback
+        // Non-JSON response (e.g. "Method Not Allowed" plain text) - fallback
         const err = new Error("Broadcaster returned invalid response");
         (err as Error & { fallback?: boolean }).fallback = true;
         throw err;
@@ -159,14 +159,15 @@ export interface RailgunPendingData {
     recipient: string;
 }
 
-export async function fetchRailgunPending(walletAddress: string, chainId: number): Promise<RailgunPendingData | null> {
+/** Returns ALL pending Railgun transfers for this wallet+chain (one per token). */
+export async function fetchRailgunPending(walletAddress: string, chainId: number): Promise<RailgunPendingData[]> {
     try {
         const res = await fetch(`${BASE}/railgun-pending/${walletAddress.toLowerCase()}/${chainId}`);
-        if (!res.ok) return null;
+        if (!res.ok) return [];
         const data = await res.json();
-        return data.pending ?? null;
+        return data.pending ?? [];
     } catch {
-        return null;
+        return [];
     }
 }
 
@@ -182,9 +183,10 @@ export async function saveRailgunPending(data: RailgunPendingData): Promise<void
     }
 }
 
-export async function clearRailgunPending(walletAddress: string, chainId: number): Promise<void> {
+/** Clear pending record for a specific token. */
+export async function clearRailgunPending(walletAddress: string, chainId: number, tokenAddress: string): Promise<void> {
     try {
-        await fetch(`${BASE}/railgun-pending/${walletAddress.toLowerCase()}/${chainId}`, {
+        await fetch(`${BASE}/railgun-pending/${walletAddress.toLowerCase()}/${chainId}/${tokenAddress.toLowerCase()}`, {
             method: "DELETE",
         });
     } catch {
