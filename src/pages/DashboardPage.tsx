@@ -122,6 +122,8 @@ interface SharedProps {
     activeTransferToken: string;
     setActiveTransferToken: (addr: string) => void;
     airBudgets: { [tokenAddress: string]: bigint };
+    qryptShieldLocked: boolean;
+    setQryptShieldLocked: (v: boolean) => void;
 }
 
 export default function DashboardPage() {
@@ -136,6 +138,7 @@ export default function DashboardPage() {
     const [activeUnshieldToken, setActiveUnshieldToken] = useState("");
     const [activeShieldToken, setActiveShieldToken] = useState("");
     const [activeTransferToken, setActiveTransferToken] = useState("");
+    const [qryptShieldLocked, setQryptShieldLocked] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [copied, setCopied] = useState(false);
     const [showConnectMenu, setShowConnectMenu] = useState(false);
@@ -352,10 +355,15 @@ export default function DashboardPage() {
     }, []);
 
     const closeModal = useCallback(() => {
+        if (qryptShieldLocked) return;
         setActiveModal(null);
         setActiveTransferToken("");
         setActiveShieldToken("");
-    }, []);
+    }, [qryptShieldLocked]);
+
+    useEffect(() => {
+        if (activeModal !== "qryptshield") setQryptShieldLocked(false);
+    }, [activeModal]);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeModal(); };
@@ -414,6 +422,8 @@ export default function DashboardPage() {
         activeTransferToken,
         setActiveTransferToken,
         airBudgets,
+        qryptShieldLocked,
+        setQryptShieldLocked,
     };
 
     return (
@@ -635,10 +645,11 @@ const MODAL_TITLES: Record<ModalId, string> = {
 
 function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
     const open = p.activeModal === id;
+    const isLocked = id === "qryptshield" && p.qryptShieldLocked;
     return (
         <>
             <div
-                onClick={p.closeModal}
+                onClick={isLocked ? undefined : p.closeModal}
                 style={{
                     position: "fixed", inset: 0, zIndex: 40,
                     background: "rgba(0,0,0,0.72)",
@@ -647,6 +658,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                     opacity: open ? 1 : 0,
                     pointerEvents: open ? "auto" : "none",
                     transition: "opacity 0.22s ease",
+                    cursor: isLocked ? "default" : "pointer",
                 }}
             />
             <div style={{
@@ -659,35 +671,56 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                 width: "min(540px, calc(100vw - 32px))",
                 maxHeight: "calc(100vh - 64px)",
                 background: "#0d0d12",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: isLocked ? "1px solid rgba(139,92,246,0.3)" : "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 20,
                 display: "flex", flexDirection: "column",
                 opacity: open ? 1 : 0,
                 pointerEvents: open ? "auto" : "none",
                 transition: "opacity 0.22s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-                boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+                boxShadow: isLocked ? "0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(139,92,246,0.15)" : "0 32px 80px rgba(0,0,0,0.7)",
             }}>
                 <div style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     padding: "0 22px", height: 56, flexShrink: 0,
                     borderBottom: "1px solid rgba(255,255,255,0.07)",
                 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "#d4d6e2", letterSpacing: "-0.01em" }}>
-                        {MODAL_TITLES[id]}
-                    </span>
-                    <button
-                        onClick={p.closeModal}
-                        style={{
-                            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)",
-                            borderRadius: 8, width: 32, height: 32,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            cursor: "pointer", color: "rgba(255,255,255,0.5)",
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-                        onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
-                    >
-                        <XIcon size={15} />
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: "#d4d6e2", letterSpacing: "-0.01em" }}>
+                            {MODAL_TITLES[id]}
+                        </span>
+                        {isLocked && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5, background: "rgba(139,92,246,0.15)", color: "#c4b5fd", border: "1px solid rgba(139,92,246,0.25)", letterSpacing: "0.04em" }}>
+                                TRANSFER IN PROGRESS
+                            </span>
+                        )}
+                    </div>
+                    {isLocked ? (
+                        <div
+                            title="Cannot close while transfer is in progress"
+                            style={{
+                                background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)",
+                                borderRadius: 8, width: 32, height: 32,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                cursor: "not-allowed", color: "rgba(139,92,246,0.5)",
+                            }}
+                        >
+                            <LockIcon size={13} />
+                        </div>
+                    ) : (
+                        <button
+                            onClick={p.closeModal}
+                            style={{
+                                background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)",
+                                borderRadius: 8, width: 32, height: 32,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                cursor: "pointer", color: "rgba(255,255,255,0.5)",
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+                            onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+                        >
+                            <XIcon size={15} />
+                        </button>
+                    )}
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", padding: "22px" }}>
                     {id === "shield" && p.vaultAddress && p.address && (
@@ -768,6 +801,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                             vaultVersion={p.vaultVersion ?? "v5"}
                             onComplete={() => { p.refetchData(); p.refetchBalances(); }}
                             onCancel={p.closeModal}
+                            onLockChange={p.setQryptShieldLocked}
                         />
                     )}
                     {id === "qryptshield" && (!p.vaultAddress || !p.address) && (
