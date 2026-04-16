@@ -7,6 +7,7 @@ const POINTS = [
     "Keep this tab open while it runs.",
     "Your funds stay safe if interrupted: you can resume.",
     "Routes through a zero-knowledge privacy network.",
+    "Estimated network fee is approximately 0.002 ETH (varies with network activity).",
 ];
 
 interface QryptShieldApprovalProps {
