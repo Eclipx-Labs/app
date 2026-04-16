@@ -108,6 +108,24 @@ const FALLBACK_RPC: Partial<Record<number, string>> = {
 
 export const PUBLIC_RPC = FALLBACK_RPC;
 
+/**
+ * Compute the Qryptum API base URL (same logic as api.ts).
+ * Used to build the mainnet RPC proxy URL so the private RPC key stays server-side.
+ */
+function getApiBase(): string {
+    const rawBase = (import.meta.env.VITE_API_BASE as string | undefined)
+        ?.replace(/\/api\/?$/, "")
+        ?.replace(/\/$/, "");
+    if (rawBase) return `${rawBase}/api`;
+    if (import.meta.env.DEV) return `${import.meta.env.BASE_URL}api`;
+    return "https://qryptum-api.up.railway.app/api";
+}
+
+/** POST /api/rpc/1 - server-side proxy to private MAINNET_RPC_URL. */
+function getMainnetRpcProxyUrl(): string {
+    return `${getApiBase()}/rpc/1`;
+}
+
 // ─── Step 3 - IndexedDB artifact store ───────────────────────────────────────
 /**
  * Persistent artifact store using IndexedDB.
@@ -375,8 +393,23 @@ export async function loadRailgunProvider(chainId: number, onProgress?: (msg: st
     // Already loaded for this chain - skip to avoid duplicate scans
     if (_loadedProviders.has(chainId)) return;
 
-    const config = NETWORK_PROVIDERS[chainId];
-    if (!config) throw new Error(`No RPC configured for chainId ${chainId}.`);
+    const baseConfig = NETWORK_PROVIDERS[chainId];
+    if (!baseConfig) throw new Error(`No RPC configured for chainId ${chainId}.`);
+
+    // For mainnet, prepend the server-side RPC proxy as priority 0.
+    // This keeps MAINNET_RPC_URL private (never exposed in the browser bundle)
+    // while still using the premium RPC for faster merkle tree scans.
+    let config = baseConfig;
+    if (chainId === 1) {
+        const proxyUrl = getMainnetRpcProxyUrl();
+        config = {
+            ...baseConfig,
+            providers: [
+                { provider: proxyUrl, priority: 0, weight: 5 },
+                ...baseConfig.providers.map(p => ({ ...p, priority: (p.priority ?? 0) + 1 })),
+            ],
+        };
+    }
 
     onProgress?.("Connecting to network...");
 
@@ -628,7 +661,7 @@ export async function hasRailgunBalance(
  * 3. If committed but NOT spendable after 3-minute grace period, resolve anyway.
  *    This handles "ShieldPending" / "MissingInternalPOI" buckets on testnet where
  *    POI may not auto-clear. The ZK proof step will fail with a clearer error if needed.
- * 4. Hard timeout: 12 minutes.
+ * 4. Hard timeout: 25 minutes on mainnet (POI validation takes longer), 12 minutes on testnet.
  */
 export async function waitForRailgunBalance(
     walletID: string,
@@ -642,7 +675,13 @@ export async function waitForRailgunBalance(
     const networkName = RAILGUN_CHAIN_MAP[chainId];
     const chain = { type: ChainType.EVM, id: chainId };
 
-    const HARD_TIMEOUT_MS = 12 * 60 * 1_000;
+    // Mainnet POI validation runs in batches off-chain and commonly takes 15-25 min.
+    // Testnet traffic is sparse so the aggregator approves shields much faster.
+    const IS_MAINNET = chainId === 1;
+    const HARD_TIMEOUT_MS = IS_MAINNET ? 25 * 60 * 1_000 : 12 * 60 * 1_000;
+    // On mainnet incremental scans need more time before escalating to full rescan.
+    const FULL_RESCAN_AFTER_MS = IS_MAINNET ? 5 * 60 * 1_000 : 2 * 60 * 1_000;
+
     const startedAt = Date.now();
     let committedAt: number | null = null;
 
@@ -667,23 +706,27 @@ export async function waitForRailgunBalance(
         }
     }
 
-    onProgress?.("Syncing Railgun pool (this may take a few minutes)...");
+    const baseMsg = IS_MAINNET
+        ? "Syncing Railgun pool - mainnet POI validation takes 15-25 min, please wait..."
+        : "Syncing Railgun pool (this may take a few minutes)...";
+    onProgress?.(baseMsg);
 
     return new Promise<void>((resolve, reject) => {
         // Hard timeout
         const hardTimer = setTimeout(() => {
             cleanup();
+            const timeoutMin = IS_MAINNET ? "25" : "12";
             // Distinguish: did we find the UTXO (in some bucket) or never find it?
             if (committedAt !== null) {
                 reject(new Error(
-                    "Your UTXO is in the Railgun pool but not yet Spendable after 12 minutes. " +
-                    "This is a shield maturity / POI delay: your tokens are safe. " +
-                    "Close this dialog and try QryptShield again in 5–10 minutes."
+                    `Your UTXO is in the Railgun pool but not yet Spendable after ${timeoutMin} minutes. ` +
+                    "This is normal on mainnet - POI validation by the Railgun aggregator can take up to 30 min. " +
+                    "Your tokens are safe. Close this dialog and try QryptShield again in 5-10 minutes."
                 ));
             } else {
                 reject(new Error(
-                    "Railgun pool sync timed out: UTXO not indexed after 12 minutes. " +
-                    "Your tokens are safe in the Railgun pool: do not retry the deposit. " +
+                    `Railgun pool sync timed out: UTXO not indexed after ${timeoutMin} minutes. ` +
+                    "Your tokens are safe in the Railgun pool - do not retry the deposit. " +
                     "Close this dialog and try QryptShield again (it will resume from Step 3)."
                 ));
             }
@@ -698,9 +741,10 @@ export async function waitForRailgunBalance(
         wpSync().refreshBalances(chain, [walletID]).catch(() => { /* best effort */ });
 
         // Re-trigger scan every 20 s.
-        // If UTXO has been found in non-Spendable bucket for > 2 min, escalate to
-        // full rescan which fixes corrupted local index (Railway's "Clear & Rescan").
-        const FULL_RESCAN_AFTER_MS = 2 * 60 * 1_000;
+        // If UTXO has been found in non-Spendable bucket for > FULL_RESCAN_AFTER_MS, escalate to
+        // full rescan which fixes corrupted local index.
+        // Mainnet: wait 5 min before escalating (incremental scans need more time on large tree).
+        // Testnet: escalate after 2 min.
         let fullRescanTriggered = false;
         const ticker = setInterval(() => {
             const pkg = wpSync();
@@ -710,7 +754,10 @@ export async function waitForRailgunBalance(
                 Date.now() - committedAt > FULL_RESCAN_AFTER_MS
             ) {
                 fullRescanTriggered = true;
-                onProgress?.("UTXO stuck in ShieldPending: triggering full index rescan...");
+                const rescanMsg = IS_MAINNET
+                    ? "POI validation pending - triggering deep index rescan (normal on mainnet)..."
+                    : "UTXO stuck in ShieldPending: triggering full index rescan...";
+                onProgress?.(rescanMsg);
                 pkg.rescanFullUTXOMerkletreesAndWallets(chain, [walletID])
                     .catch(() => { /* best effort */ });
             } else {
@@ -764,10 +811,10 @@ export async function waitForRailgunBalance(
             const sinceCommit = committedAt !== null
                 ? Math.floor((Date.now() - committedAt) / 1000)
                 : 0;
-            onProgress?.(
-                `UTXO found in pool (maturing… ${sinceCommit}s). ` +
-                `Waiting for Spendable confirmation. (${elapsed()})`
-            );
+            const maturingMsg = IS_MAINNET
+                ? `Deposit in pool - awaiting POI validation by Railgun aggregator (${sinceCommit}s, normal on mainnet). (${elapsed()})`
+                : `UTXO found in pool (maturing... ${sinceCommit}s). Waiting for Spendable confirmation. (${elapsed()})`;
+            onProgress?.(maturingMsg);
         });
     });
 }
