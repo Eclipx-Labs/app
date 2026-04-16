@@ -88,6 +88,28 @@ export default function QryptShieldPanel({
         }
         return tokensWithBalances.find(t => t.shieldedBalance && t.shieldedBalance > 0n) ?? tokensWithBalances[0] ?? null;
     });
+
+    // Sync selectedToken when tokensWithBalances arrives late (data loads after mount)
+    useEffect(() => {
+        if (tokensWithBalances.length === 0) return;
+        setSelectedToken(prev => {
+            // If no token selected yet, pick the right one
+            if (!prev) {
+                if (initialTokenAddress) {
+                    return tokensWithBalances.find(
+                        t => t.tokenAddress.toLowerCase() === initialTokenAddress.toLowerCase()
+                    ) ?? tokensWithBalances[0];
+                }
+                return tokensWithBalances.find(t => t.shieldedBalance && t.shieldedBalance > 0n) ?? tokensWithBalances[0];
+            }
+            // Token already selected - just refresh its shieldedBalance from updated list
+            const refreshed = tokensWithBalances.find(
+                t => t.tokenAddress.toLowerCase() === prev.tokenAddress.toLowerCase()
+            );
+            return refreshed ?? prev;
+        });
+    }, [tokensWithBalances, initialTokenAddress]);
+
     const [showTokenPicker, setShowTokenPicker] = useState(false);
     const [amount, setAmount] = useState("");
     const [recipient, setRecipient] = useState("");
