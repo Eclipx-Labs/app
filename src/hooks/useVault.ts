@@ -79,6 +79,12 @@ export function useVault() {
     const vaultVersion: VaultVersion = hasV6Vault === true ? "v6" : hasV5Vault === true ? "v5" : null;
     const factoryAddress = hasV6Vault === true ? v6FactoryAddress : v5FactoryAddress;
 
+    // Loading: queries are pending (undefined = not yet resolved, not false)
+    const isVaultLoading = !!address && (
+        (!!v6FactoryAddress && hasV6Vault === undefined) ||
+        (!!v5FactoryAddress && hasV5Vault === undefined)
+    );
+
     const refetch = () => {
         refetchV6();
         refetchV6Addr();
@@ -92,6 +98,7 @@ export function useVault() {
         vaultVersion,
         vaultRecord,
         factoryAddress,
+        isVaultLoading,
         refetch,
     };
 }
