@@ -234,7 +234,7 @@ export default function TransferPanel({ vaultAddress, walletAddress, chainId, va
                 } catch (simErr: unknown) {
                     revealLockRef.current = false;
                     const raw = simErr instanceof Error ? simErr.message : String(simErr);
-                    // Extract short reason — strip long hex data
+                    // Extract short reason - strip long hex data
                     const reason = raw.replace(/0x[0-9a-fA-F]{64,}/g, "").trim().slice(0, 300);
                     setSimulateError(reason || "Simulation failed: check vault proof and try again.");
                     return;
