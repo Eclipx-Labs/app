@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PERSONAL_VAULT_ABI, PERSONAL_VAULT_V6_ABI } from "@/lib/abi";
+import { PERSONAL_VAULT_ABI, getVaultABI } from "@/lib/abi";
 import { validatePasswordFormat, hashPassword, peekNextProof, consumeProofAtPosition } from "@/lib/password";
 import {
     ensureRailgunEngine,
@@ -76,7 +76,7 @@ export default function QryptShieldPanel({
     onComplete,
 }: QryptShieldPanelProps) {
     const { data: walletClient } = useWalletClient();
-    const publicClient = usePublicClient();
+    const publicClient = usePublicClient({ chainId });
 
     const tokenLocked = !!initialTokenAddress;
 
@@ -115,7 +115,7 @@ export default function QryptShieldPanel({
     const token = selectedToken;
     const decimals = token?.decimals ?? 6;
     const parsedAmount = amount && !isNaN(parseFloat(amount)) ? parseUnits(amount, decimals) : 0n;
-    // Net amount after Railgun 0.25% shield fee — used in ZK proof generation
+    // Net amount after Railgun 0.25% shield fee - used in ZK proof generation
     const netAmount = parsedAmount - (parsedAmount * 25n / 10000n);
 
     const proofValid = validatePasswordFormat(vaultProof);
@@ -161,13 +161,13 @@ export default function QryptShieldPanel({
 
             // ── STEP 1: Init Railgun engine ─────────────────────────────────
             // If session is cached (i.e. user clicked "Try again") skip all
-            // MetaMask signs — engine is already running and keys are derived.
+            // MetaMask signs - engine is already running and keys are derived.
             stepActive("engine", "Loading privacy engine...");
             await ensureRailgunEngine(msg => updateStep("engine", { detail: msg }));
             await loadRailgunProvider(chainId, msg => updateStep("engine", { detail: msg }));
 
             if (!sessionRef.current) {
-                // First run — need both MetaMask signs (deterministic, cached after this)
+                // First run - need both MetaMask signs (deterministic, cached after this)
                 updateStep("engine", { detail: "Sign to authorize your privacy wallet (1 of 2)..." });
                 const encKeySignature = await walletClient.signMessage({
                     account,
@@ -201,7 +201,7 @@ export default function QryptShieldPanel({
             // (e.g. a previous run completed atomicShield but browser crashed
             //  before sync/deliver), skip straight to step 3.
             // Use stepActive (not updateStep) so the spinner starts immediately
-            // after step 1 — no gap where the UI looks frozen.
+            // after step 1 - no gap where the UI looks frozen.
             stepActive("atomicShield", "Checking for existing pool balance...");
             const alreadyShielded = await hasRailgunBalance(
                 railgunWalletID,
@@ -234,17 +234,19 @@ export default function QryptShieldPanel({
                 let atomicHash: `0x${string}`;
 
                 if (vaultVersion === "v6") {
-                    // V6: needs OTP chain proof — derive via peekNextProof then consume after TX
+                    // V6: needs OTP chain proof - derive via peekNextProof then consume after TX
                     const { proof: otpProof, position: otpPos } = await peekNextProof(
                         vaultProof,
                         walletAddress,
                         publicClient ? { vaultAddress: vaultAddress as string, publicClient } : undefined,
                     );
+                    // mainnet uses enterRailgun, Sepolia V6 uses railgun (frozen on-chain name)
+                    const railgunFnName = chainId === 1 ? "enterRailgun" : "railgun";
                     atomicHash = await walletClient.writeContract({
                         account,
                         address: vaultAddress,
-                        abi: PERSONAL_VAULT_V6_ABI,
-                        functionName: "railgun",
+                        abi: getVaultABI(chainId),
+                        functionName: railgunFnName,
                         chain: undefined,
                         args: [
                             token.tokenAddress as `0x${string}`,
@@ -258,7 +260,7 @@ export default function QryptShieldPanel({
                     updateStep("atomicShield", { detail: "Confirming on-chain...", txHash: atomicHash });
                     const atomicReceiptV6 = await publicClient!.waitForTransactionReceipt({ hash: atomicHash });
                     if (atomicReceiptV6.status === "reverted") throw new Error(`Shield transaction reverted on-chain. Check Etherscan for details. TX: ${atomicHash}`);
-                    // consumeProofAtPosition is local state only — wrap so a failure here
+                    // consumeProofAtPosition is local state only - wrap so a failure here
                     // does NOT mark the step as failed (TX is already confirmed on-chain)
                     try { consumeProofAtPosition(walletAddress, otpPos); } catch { /* non-critical */ }
                 } else {
@@ -296,7 +298,7 @@ export default function QryptShieldPanel({
             stepDone("sync");
 
             // ── STEP 4: Generate unshield ZK proof (~60 s) ─────────────────
-            // Use netAmount (after Railgun 0.25% fee) — this is what's in the pool.
+            // Use netAmount (after Railgun 0.25% fee) - this is what's in the pool.
             stepActive("proof", "Generating zero-knowledge proof (approx. 60 seconds)...");
             const unshieldTx = await buildUnshieldTx({
                 chainId,
@@ -314,7 +316,7 @@ export default function QryptShieldPanel({
 
             // ── STEP 5: Deliver via QryptumSigner (private broadcaster) ────
             // QryptumSigner submits the TX so Wallet A does NOT appear as
-            // `from` on Etherscan. NO fallback — broadcaster is mandatory.
+            // `from` on Etherscan. NO fallback - broadcaster is mandatory.
             stepActive("deliver", "Routing via QryptumSigner...");
 
             const broadcastResult = await broadcastUnshieldTx({
@@ -325,7 +327,7 @@ export default function QryptShieldPanel({
             });
 
             const deliverHash = broadcastResult.txHash as `0x${string}`;
-            updateStep("deliver", { detail: `Relayed via QryptumSigner — sender address hidden.`, txHash: deliverHash });
+            updateStep("deliver", { detail: `Relayed via QryptumSigner - sender address hidden.`, txHash: deliverHash });
 
             const deliverReceipt = await publicClient.waitForTransactionReceipt({ hash: deliverHash });
             if (deliverReceipt.status === "reverted") throw new Error(`Unshield transaction reverted on-chain (Invalid Snark Proof or gas too low). TX: ${deliverHash}`);
