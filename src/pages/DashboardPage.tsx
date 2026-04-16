@@ -93,6 +93,7 @@ interface SharedProps {
     networkName: string;
     balanceStr: string;
     hasVault: boolean;
+    isVaultLoading: boolean;
     vaultVersion: VaultVersion;
     vaultAddress: `0x${string}` | undefined;
     copied: boolean;
@@ -125,7 +126,7 @@ export default function DashboardPage() {
     const chainId = useChainId();
     const { disconnect } = useDisconnect();
     const { connect, connectors } = useConnect();
-    const { vaultAddress, hasVault, vaultVersion } = useVault();
+    const { vaultAddress, hasVault, vaultVersion, isVaultLoading } = useVault();
     const { data: balance } = useBalance({ address });
 
     const [activeModal, setActiveModal] = useState<ModalId | null>(null);
@@ -371,7 +372,7 @@ export default function DashboardPage() {
     const sharedProps: SharedProps = {
         activeModal, setActiveModal, closeModal,
         isConnected, address, shortAddress,
-        chainId, networkName, balanceStr, hasVault, vaultVersion, vaultAddress,
+        chainId, networkName, balanceStr, hasVault, isVaultLoading, vaultVersion, vaultAddress,
         copied, copyAddress,
         showConnectMenu, setShowConnectMenu,
         handleDisconnect: disconnect,
@@ -435,6 +436,19 @@ export default function DashboardPage() {
 
 function getNetworkName(chainId: number) {
     return ({ 1: "Ethereum", 11155111: "Sepolia", 31337: "Local" } as Record<number, string>)[chainId] || `Chain ${chainId}`;
+}
+
+function ModalNoVaultMsg({ isConnected, isLoading }: { isConnected: boolean; isLoading: boolean }) {
+    const msg = isLoading
+        ? "Checking for Qrypt-Safe..."
+        : !isConnected
+        ? "Connect your wallet first."
+        : "You need to create a Qrypt-Safe on this network first.";
+    return (
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
+            {msg}
+        </p>
+    );
 }
 
 function formatBalance(balance: bigint | undefined, decimals: number): string {
@@ -545,17 +559,13 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                         />
                     )}
                     {id === "shield" && (!p.vaultAddress || !p.address) && (
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-                            Connect your wallet and create a Qrypt-Safe first.
-                        </p>
+                        <ModalNoVaultMsg isConnected={p.isConnected} isLoading={p.isVaultLoading} />
                     )}
                     {id === "transfer" && p.vaultAddress && p.address && (
                         <TransferPanel key={p.activeTransferToken || "none"} vaultAddress={p.vaultAddress} walletAddress={p.address} chainId={p.chainId} vaultVersion={p.vaultVersion} initialTokenAddress={p.activeTransferToken || undefined} />
                     )}
                     {id === "transfer" && (!p.vaultAddress || !p.address) && (
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-                            Connect your wallet and create a Qrypt-Safe first.
-                        </p>
+                        <ModalNoVaultMsg isConnected={p.isConnected} isLoading={p.isVaultLoading} />
                     )}
                     {id === "transfer-select" && (
                         <TransferModeSelector
@@ -606,9 +616,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                         />
                     )}
                     {id === "qryptshield" && (!p.vaultAddress || !p.address) && (
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-                            Connect your wallet and create a Qrypt-Safe first.
-                        </p>
+                        <ModalNoVaultMsg isConnected={p.isConnected} isLoading={p.isVaultLoading} />
                     )}
                     {id === "unshield" && p.vaultAddress && p.address && (
                         <UnshieldPanel
@@ -621,9 +629,7 @@ function Modal({ id, p }: { id: ModalId; p: SharedProps }) {
                         />
                     )}
                     {id === "unshield" && (!p.vaultAddress || !p.address) && (
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textAlign: "center", padding: "32px 0" }}>
-                            Connect your wallet and create a Qrypt-Safe first.
-                        </p>
+                        <ModalNoVaultMsg isConnected={p.isConnected} isLoading={p.isVaultLoading} />
                     )}
                     {id === "vaults" && <ModalVaults p={p} />}
                     {id === "settings" && p.vaultAddress && (
