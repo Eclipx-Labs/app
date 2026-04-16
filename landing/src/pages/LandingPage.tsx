@@ -91,7 +91,7 @@ function SpiralBg() {
         ctx.fill();
       }
 
-      t += 0.018; // flow speed — visible right-to-left movement
+      t += 0.018; // flow speed - visible right-to-left movement
       animId = requestAnimationFrame(draw);
     }
 
@@ -304,7 +304,44 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <footer style={{ marginTop: "32px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", width: "100%" }}>
+          <div style={{
+            marginTop: "28px",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "10px",
+            padding: "18px 20px",
+            border: "1px solid rgba(56,189,248,0.12)",
+            borderRadius: "14px",
+            background: "rgba(56,189,248,0.04)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+                <circle cx="4.5" cy="4.5" r="4.5" fill="#22c55e" opacity="0.25" />
+                <circle cx="4.5" cy="4.5" r="2.5" fill="#22c55e" />
+              </svg>
+              <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", color: "#22c55e", textTransform: "uppercase" }}>All Systems Operational</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "12px", color: "rgba(255,255,255,0.35)", textAlign: "center", lineHeight: 1.6 }}>
+              Live status of smart contracts, RPC nodes, IPFS, and API
+            </p>
+            <a href="/status" style={{
+              display: "inline-flex", alignItems: "center", gap: "6px",
+              fontSize: "11px", fontWeight: 600, color: "#38bdf8",
+              textDecoration: "none", letterSpacing: "0.05em",
+              padding: "6px 14px", borderRadius: "8px",
+              border: "1px solid rgba(56,189,248,0.2)",
+              background: "rgba(56,189,248,0.06)",
+            }}>
+              View Status Page
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 6h8M6 2l4 4-4 4" />
+              </svg>
+            </a>
+          </div>
+
+          <footer style={{ marginTop: "24px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", width: "100%" }}>
             <span style={{ fontSize: "9px", letterSpacing: "0.14em", color: "#1e3a5f", textTransform: "uppercase" }}>Built on the Ecosystem</span>
             <div className="qr-marquee-outer">
               {(() => {
