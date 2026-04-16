@@ -555,7 +555,7 @@ export const PERSONAL_VAULT_V6_ABI = [
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mainnet ABI — QryptSafe.sol (renamed functions, deploy-ready)
+// Mainnet ABI - QryptSafe.sol (renamed functions, deploy-ready)
 // Sepolia V6 ABI above stays unchanged for backward compatibility.
 // ─────────────────────────────────────────────────────────────────────────────
 
