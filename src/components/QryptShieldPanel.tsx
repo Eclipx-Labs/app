@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useWalletClient, usePublicClient, useReadContract } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import {
