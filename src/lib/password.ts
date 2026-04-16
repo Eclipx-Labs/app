@@ -65,7 +65,7 @@ export function buildCommitHash(
 
 /**
  * Derive H0 from the vault proof via the Railway API (server-side PBKDF2-SHA256, 200k iterations).
- * PROOF_SALT never reaches the frontend — it lives only in the Railway environment.
+ * PROOF_SALT never reaches the frontend - it lives only in the Railway environment.
  * H0 is never submitted to the blockchain during normal operations -- only during rechargeChain.
  */
 export async function generateH0(
@@ -256,7 +256,7 @@ export function consumeProofAtPosition(walletAddress: string, position: number):
 /**
  * Convenience wrapper: peek + consume in one call.
  * Use for single-TX operations (shield, unshield) where there is no commit-reveal split.
- * Decrement happens BEFORE the TX is sent — if the user rejects MetaMask the position
+ * Decrement happens BEFORE the TX is sent - if the user rejects MetaMask the position
  * is consumed but the proof was never used on-chain.  To avoid this, prefer using
  * peekNextProof + consumeProofAtPosition directly.
  *
