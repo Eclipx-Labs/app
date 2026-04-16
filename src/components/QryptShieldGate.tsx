@@ -1,10 +1,7 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, Component, type ReactNode } from "react";
 import QryptShieldApproval from "@/components/QryptShieldApproval";
 import QryptShieldLoader from "@/components/QryptShieldLoader";
-
-const QryptShieldPanel = lazy(() =>
-    import("@/components/QryptShieldPanel")
-);
+import QryptShieldPanel from "@/components/QryptShieldPanel";
 
 interface ShieldedToken {
     tokenAddress: string;
@@ -24,6 +21,44 @@ interface QryptShieldGateProps {
     vaultVersion?: "v5" | "v6";
     onComplete?: () => void;
     onCancel?: () => void;
+}
+
+interface ErrorBoundaryState { error: Error | null }
+class QryptShieldErrorBoundary extends Component<{ children: ReactNode; onCancel?: () => void }, ErrorBoundaryState> {
+    constructor(props: { children: ReactNode; onCancel?: () => void }) {
+        super(props);
+        this.state = { error: null };
+    }
+    static getDerivedStateFromError(error: Error) { return { error }; }
+    render() {
+        if (this.state.error) {
+            return (
+                <div style={{ padding: "32px 16px", textAlign: "center" }}>
+                    <p style={{ color: "#f87171", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+                        Something went wrong loading QryptShield.
+                    </p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 20, lineHeight: 1.5 }}>
+                        {this.state.error.message}
+                    </p>
+                    <button
+                        onClick={() => this.setState({ error: null })}
+                        style={{ fontSize: 13, fontWeight: 600, color: "#8B5CF6", background: "none", border: "none", cursor: "pointer", marginRight: 20 }}
+                    >
+                        Try again
+                    </button>
+                    {this.props.onCancel && (
+                        <button
+                            onClick={this.props.onCancel}
+                            style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer" }}
+                        >
+                            Cancel
+                        </button>
+                    )}
+                </div>
+            );
+        }
+        return this.props.children;
+    }
 }
 
 type Phase = "approval" | "zk-setup" | "transfer";
@@ -51,7 +86,7 @@ export default function QryptShieldGate(props: QryptShieldGateProps) {
     }
 
     return (
-        <Suspense fallback={<QryptShieldLoader chainId={props.chainId} />}>
+        <QryptShieldErrorBoundary onCancel={props.onCancel}>
             <QryptShieldPanel
                 vaultAddress={props.vaultAddress}
                 walletAddress={props.walletAddress}
@@ -61,6 +96,6 @@ export default function QryptShieldGate(props: QryptShieldGateProps) {
                 vaultVersion={props.vaultVersion ?? "v5"}
                 onComplete={props.onComplete}
             />
-        </Suspense>
+        </QryptShieldErrorBoundary>
     );
 }
