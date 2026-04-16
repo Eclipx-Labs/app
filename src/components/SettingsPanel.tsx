@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { PERSONAL_VAULT_ABI } from "@/lib/abi";
 import { validatePasswordFormat, hashPassword, syncChainPosition, getChainPosition } from "@/lib/password";
+import type { SyncResult } from "@/lib/password";
 import { getTxEtherscanUrl } from "@/lib/utils";
 import type { VaultVersion } from "@/hooks/useVault";
 
@@ -25,7 +26,7 @@ function getEtherscanUrl(address: string, chainId?: number): string {
 
 export default function SettingsPanel({ vaultAddress, walletAddress, vaultVersion, chainId }: SettingsPanelProps) {
     const { toast } = useToast();
-    const publicClient = usePublicClient();
+    const publicClient = usePublicClient({ chainId } as Parameters<typeof usePublicClient>[0]);
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmNew, setConfirmNew] = useState("");
@@ -36,7 +37,7 @@ export default function SettingsPanel({ vaultAddress, walletAddress, vaultVersio
     const [syncProof, setSyncProof] = useState("");
     const [showSyncProof, setShowSyncProof] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
-    const [syncResult, setSyncResult] = useState<{ ok: boolean; pos?: number } | null>(null);
+    const [syncResult, setSyncResult] = useState<(SyncResult & { ok: boolean }) | null>(null);
     const syncProofValid = validatePasswordFormat(syncProof);
     const isV6 = vaultVersion === "v6";
     const currentChainPos = isV6 && walletAddress ? getChainPosition(walletAddress) : null;
@@ -46,17 +47,20 @@ export default function SettingsPanel({ vaultAddress, walletAddress, vaultVersio
         setIsSyncing(true);
         setSyncResult(null);
         try {
-            const pos = await syncChainPosition(syncProof, walletAddress, vaultAddress, publicClient);
-            if (pos !== null) {
-                setSyncResult({ ok: true, pos });
-                toast({ title: "Chain position synced", description: `Position recovered: ${pos} operations remaining.` });
+            const result = await syncChainPosition(syncProof, walletAddress, vaultAddress, publicClient);
+            if (result.pos !== null) {
+                setSyncResult({ ...result, ok: true });
+                toast({ title: "Chain position synced", description: `Position recovered: ${result.pos} operations remaining.` });
+            } else if (result.isZero) {
+                setSyncResult({ ...result, ok: false });
+                toast({ title: "Sync failed", description: "Vault storage is empty. The vault may not be initialized.", variant: "destructive" });
             } else {
-                setSyncResult({ ok: false });
-                toast({ title: "Sync failed", description: "Vault proof may be incorrect. Make sure you enter the same vault proof used when creating your Qrypt-Safe.", variant: "destructive" });
+                setSyncResult({ ...result, ok: false });
+                toast({ title: "Sync failed", description: "Vault proof does not match on-chain data (case-sensitive).", variant: "destructive" });
             }
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Unknown error";
-            setSyncResult({ ok: false });
+            setSyncResult(null);
             toast({ title: "Sync error", description: msg, variant: "destructive" });
         } finally {
             setIsSyncing(false);
@@ -250,9 +254,20 @@ export default function SettingsPanel({ vaultAddress, walletAddress, vaultVersio
                         )}
                     </div>
                     {syncResult && (
-                        <p className={`text-sm ${syncResult.ok ? "text-green-400" : "text-destructive"}`}>
-                            {syncResult.ok ? `Synced. ${syncResult.pos} operations remaining.` : "Sync failed. Check your vault proof."}
-                        </p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <p className={`text-sm ${syncResult.ok ? "text-green-400" : "text-destructive"}`}>
+                                {syncResult.ok
+                                    ? `Synced. ${syncResult.pos} operations remaining.`
+                                    : syncResult.isZero
+                                        ? "Sync failed: vault storage is empty."
+                                        : "Sync failed: vault proof does not match (case-sensitive)."}
+                            </p>
+                            {!syncResult.ok && syncResult.contractHead && (
+                                <p style={{ fontSize: 11, margin: 0, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>
+                                    Slot 1: {syncResult.contractHead.slice(0, 18)}...
+                                </p>
+                            )}
+                        </div>
                     )}
                     <Button
                         className="w-full"
