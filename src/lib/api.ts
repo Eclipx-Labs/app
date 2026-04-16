@@ -1,6 +1,6 @@
 // Railway URL is the canonical API. In dev, VITE_API_BASE is unset and Vite
 // proxies /api to the local server. In production (GitHub Pages / IPFS),
-// VITE_API_BASE may be unset too — fall back to the hardcoded Railway URL so
+// VITE_API_BASE may be unset too - fall back to the hardcoded Railway URL so
 // no GitHub Secrets are required.
 // Strip trailing /api or / from VITE_API_BASE so we always append exactly one /api.
 // Handles both "https://host" and "https://host/api" formats.
@@ -34,8 +34,10 @@ export async function registerVault(data: {
     return res.json();
 }
 
-export async function fetchTransactions(walletAddress: string, limit = 20, offset = 0) {
-    const res = await fetch(`${BASE}/transactions/${walletAddress}?limit=${limit}&offset=${offset}`);
+export async function fetchTransactions(walletAddress: string, limit = 20, offset = 0, chainId?: number) {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (chainId !== undefined) params.set("networkId", String(chainId));
+    const res = await fetch(`${BASE}/transactions/${walletAddress}?${params}`);
     if (!res.ok) throw new Error("Failed to fetch transactions");
     return res.json();
 }
