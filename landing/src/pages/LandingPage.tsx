@@ -304,7 +304,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <a href="https://qryptumorg.github.io/app/status" style={{
+          <a href="#/status" style={{
             marginTop: "20px",
             display: "inline-flex", alignItems: "center", gap: "7px",
             textDecoration: "none", cursor: "pointer",
