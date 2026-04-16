@@ -29,7 +29,7 @@ export default function ShieldPanel({ vaultAddress, walletAddress, chainId, vaul
     const [deriving, setDeriving] = useState(false);
     const [_step, setStep] = useState<"input" | "approve" | "shield">("input");
     const { pushTx } = useTxStatus();
-    const publicClient = usePublicClient();
+    const publicClient = usePublicClient({ chainId });
 
     const isV6 = vaultVersion === "v6";
     const isValidToken = tokenAddress.startsWith("0x") && tokenAddress.length === 42;
