@@ -19,6 +19,7 @@ const SYMBOL_TO_MAINNET: Record<string, string> = {
     PEPE:  "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
     ARB:   "0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1",
     OP:    "0x4200000000000000000000000000000000000042",
+    RAIL:  "0xe76C6c83af64e4C60245D8C7dE953DF673a7A33D",
 };
 
 function twUrl(address: string): string {
@@ -42,6 +43,12 @@ interface TokenLogoProps {
 export default function TokenLogo({ tokenAddress, tokenSymbol, color, size = 32 }: TokenLogoProps) {
     const [src, setSrc] = useState<string | null>(() => resolveInitialSrc(tokenAddress, tokenSymbol));
     const [errored, setErrored] = useState(false);
+
+    // Reset src + error state whenever the token changes
+    useEffect(() => {
+        setSrc(resolveInitialSrc(tokenAddress, tokenSymbol));
+        setErrored(false);
+    }, [tokenAddress, tokenSymbol]);
 
     // For tokens not in the symbol map, try CoinGecko then DexScreener
     useEffect(() => {
