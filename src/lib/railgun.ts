@@ -86,10 +86,8 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
     11155111: {
         chainId: 11155111,
         providers: [
-            { provider: "https://ethereum-sepolia-rpc.publicnode.com", priority: 1, weight: 2 },
-            { provider: "https://rpc.sepolia.org", priority: 2, weight: 1 },
-            { provider: "https://rpc2.sepolia.org", priority: 3, weight: 1 },
-            { provider: "https://sepolia.drpc.org", priority: 4, weight: 1 },
+            // dRPC Sepolia — no publicnode (drops connections same as mainnet)
+            { provider: "https://sepolia.drpc.org", priority: 1, weight: 1 },
         ],
     },
 };
@@ -100,7 +98,7 @@ const FALLBACK_RPC: Partial<Record<number, string>> = {
     137: "https://polygon.llamarpc.com",
     56: "https://binance.llamarpc.com",
     42161: "https://arbitrum.llamarpc.com",
-    11155111: "https://ethereum-sepolia-rpc.publicnode.com",
+    11155111: "https://sepolia.drpc.org",
 };
 
 export const PUBLIC_RPC = FALLBACK_RPC;
