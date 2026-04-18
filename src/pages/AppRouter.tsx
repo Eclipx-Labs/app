@@ -4,6 +4,7 @@ import { LanguageProvider } from "@/lib/LanguageContext";
 import PageLoader from "@/components/PageLoader";
 
 const DashboardPage = lazy(() => import("./DashboardPage"));
+const HackContestPage = lazy(() => import("./HackContestPage"));
 const NotFound = lazy(() => import("./not-found"));
 
 function QryptAirRedirect() {
@@ -61,6 +62,7 @@ export default function AppRouter() {
             <Route path="/" component={DashboardRoute} />
             <Route path="/app" component={DashboardRoute} />
             <Route path="/air" component={QryptAirRedirect} />
+            <Route path="/hack" component={() => <Suspense fallback={null}><HackContestPage /></Suspense>} />
             <Route component={NotFound} />
         </Switch>
         </Suspense>
