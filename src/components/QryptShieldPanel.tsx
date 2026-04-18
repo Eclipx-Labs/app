@@ -22,6 +22,7 @@ import {
     waitForRailgunBalance,
     hasRailgunBalance,
     clearZKArtifactCache,
+    subscribeScanProgress,
     RAILGUN_CHAIN_MAP,
 } from "@/lib/railgun";
 import { recordTransaction, broadcastUnshieldTx, fetchRailgunPending, saveRailgunPending, clearRailgunPending, type RailgunPendingData } from "@/lib/api";
@@ -59,8 +60,8 @@ interface Step {
 
 const INITIAL_STEPS: Step[] = [
     { id: "engine",        label: "Prepare privacy engine",              status: "pending" },
-    { id: "atomicShield",  label: "Enter Railgun pool", status: "pending" },
-    { id: "sync",          label: "Sync with pool",                      status: "pending" },
+    { id: "atomicShield",  label: "Enter Railgun pool",                  status: "pending" },
+    { id: "sync",          label: "Build privacy index",                  status: "pending" },
     { id: "proof",         label: "Generate delivery proof",             status: "pending" },
     { id: "deliver",       label: "Deliver to recipient",                status: "pending" },
 ];
@@ -121,10 +122,14 @@ export default function QryptShieldPanel({
     const [phase, setPhase] = useState<"form" | "running" | "done" | "error">("form");
     const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
     const [fatalError, setFatalError] = useState<string | null>(null);
-    // When sync exceeds SYNC_USER_TIMEOUT_MS, let user close and check back later.
-    // Tokens are already in the pool (pending state saved); this is not an error.
+    // 3-minute timeout: surface "close and come back" UI early.
+    // First-time IndexedDB build processes 375k+ historical RAILGUN commitments
+    // through WASM Poseidon hashing (~1-3 hours). Progress is saved to IndexedDB
+    // so the scan resumes exactly where it left off on every subsequent page load.
+    // On return visits the index is already complete and sync takes seconds.
     const [syncTimedOut, setSyncTimedOut] = useState(false);
-    const SYNC_USER_TIMEOUT_MS = 10 * 60 * 1_000; // 10 minutes
+    const [syncProgress, setSyncProgress] = useState(0);
+    const SYNC_USER_TIMEOUT_MS = 3 * 60 * 1_000; // 3 min - fail fast, DB resumes
 
     useEffect(() => {
         onLockChange?.(phase === "running");
@@ -415,31 +420,35 @@ export default function QryptShieldPanel({
             }
 
             // ── STEP 3: Wait for Merkle tree sync ──────────────────────────
-            stepActive("sync", "Syncing with Railgun pool (this may take a few minutes)...");
+            // The RAILGUN engine hashes every historical commitment through
+            // WASM Poseidon on first use. Progress is persisted to IndexedDB
+            // (level-js) so subsequent visits resume from the saved position
+            // and typically complete in seconds. First visit: 1-3 hours.
+            stepActive("sync", "Building privacy index...");
             {
-                // Race the actual sync against a 10-minute user-facing timeout.
-                // If the timer fires first, we surface a "close and resume" UI instead
-                // of blocking the user indefinitely. Tokens are already in the pool
-                // (pending state saved after step 2), so this is NOT a failure.
                 const SYNC_TIMED_OUT = Symbol("SYNC_TIMED_OUT");
+                // Subscribe to UTXO scan progress for real-time % display
+                const unsubScanProgress = subscribeScanProgress((msg) => {
+                    const pctMatch = msg.match(/(\d+)%/);
+                    if (pctMatch) setSyncProgress(parseInt(pctMatch[1], 10));
+                    updateStep("sync", { detail: msg });
+                });
                 const syncRace = await Promise.race([
                     waitForRailgunBalance(
                         railgunWalletID,
                         chainId,
                         msg => updateStep("sync", { detail: msg }),
                         token.tokenAddress,
-                    ).then(() => null),
+                    ).then(() => null).finally(() => unsubScanProgress()),
                     new Promise<typeof SYNC_TIMED_OUT>(res =>
                         setTimeout(() => res(SYNC_TIMED_OUT), SYNC_USER_TIMEOUT_MS)
                     ),
                 ]);
                 if (syncRace === SYNC_TIMED_OUT) {
-                    // Surface timeout UI — do NOT proceed to proof/deliver steps.
-                    updateStep("sync", {
-                        detail: "Sync is taking longer than usual. Your tokens are safe in the pool. Close this panel and tap \"Resume Transfer\" to continue when ready.",
-                    });
+                    unsubScanProgress();
+                    updateStep("sync", { detail: "Index still building in background. Your tokens are safe." });
                     setSyncTimedOut(true);
-                    return; // exits handleSend; pending state stays saved for resume
+                    return;
                 }
             }
             stepDone("sync");
@@ -536,19 +545,29 @@ export default function QryptShieldPanel({
                 <Stepper steps={steps} chainId={chainId} />
                 {syncTimedOut && (
                     <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                        <p style={{ margin: "0 0 4px", fontSize: 12, fontWeight: 700, color: "#a78bfa" }}>Sync is still running in the background</p>
-                        <p style={{ margin: "0 0 12px", fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
-                            Your tokens are safe inside the Railgun pool. The pool sync can take 15-25 minutes on mainnet. Close this panel and come back — tap <strong style={{ color: "rgba(255,255,255,0.75)" }}>Resume Transfer</strong> on the form to continue where you left off.
+                        <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "#a78bfa" }}>
+                            Privacy index building in background
+                            {syncProgress > 0 && <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.5)" }}> — {syncProgress}% complete</span>}
+                        </p>
+                        <p style={{ margin: "0 0 4px", fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
+                            Your tokens are safe in the Railgun pool. This panel shielded them successfully.
+                        </p>
+                        <p style={{ margin: "0 0 12px", fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
+                            <strong style={{ color: "rgba(255,255,255,0.6)" }}>First-time setup</strong> hashes 375k+ historical commitments in your browser (~1-3 hours total). The index is saved to your browser storage — every time you return, the scan resumes from where it stopped. <strong style={{ color: "rgba(255,255,255,0.6)" }}>Second visit onwards is instant.</strong>
+                        </p>
+                        <p style={{ margin: "0 0 12px", fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
+                            Close this panel and come back later — tap <strong style={{ color: "rgba(255,255,255,0.7)" }}>Resume Transfer</strong> on the form to continue from where you left off.
                         </p>
                         <button
                             onClick={() => {
                                 setSyncTimedOut(false);
+                                setSyncProgress(0);
                                 setPhase("form");
                                 setSteps(INITIAL_STEPS.map(s => ({ ...s })));
                             }}
                             style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", background: "none", border: "1px solid rgba(139,92,246,0.4)", borderRadius: 8, cursor: "pointer", padding: "6px 16px" }}
                         >
-                            Close and check back later
+                            OK, I will check back later
                         </button>
                     </div>
                 )}

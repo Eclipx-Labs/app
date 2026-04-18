@@ -731,9 +731,13 @@ export async function waitForRailgunBalance(
         }
     }
 
+    // First visit: WASM hashes 375k+ historical commitments - takes 1-3 hours.
+    // The engine persists lastSyncedBlock to IndexedDB (level-js); on every return
+    // visit the engine resumes from that block and only new events are processed.
+    // Return visits complete in seconds. Users should close and come back.
     const baseMsg = IS_MAINNET
-        ? "Syncing Railgun pool - mainnet POI validation takes 15-25 min, please wait..."
-        : "Syncing Railgun pool (this may take a few minutes)...";
+        ? "Building privacy index (first-time setup: 1-3 hours, saved to browser storage)..."
+        : "Building privacy index...";
     onProgress?.(baseMsg);
 
     return new Promise<void>((resolve, reject) => {
