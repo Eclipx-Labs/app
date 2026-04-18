@@ -304,7 +304,7 @@ export async function ensureRailgunEngine(onProgress?: (msg: string) => void): P
         await startRailgunEngine(
             "qryptum",      // walletSource - max 16 chars, lowercase
             db,
-            false,          // shouldDebug
+            true,           // shouldDebug - logs RAILGUN SDK internals to browser console
             artifactStore,
             false,          // useNativeArtifacts (browser = false)
             false,          // skipMerkletreeScans: false = full UTXO+TXID Merkle tree sync.
@@ -351,16 +351,19 @@ export async function ensureRailgunEngine(onProgress?: (msg: string) => void): P
         // Consumers subscribe via subscribeScanProgress() below
         setOnUTXOMerkletreeScanCallback((data) => {
             const pct = Math.round((data.progress ?? 0) * 100);
+            console.log('[QryptShield] UTXO scan progress:', pct + '%', JSON.stringify(data));
             _scanListeners.forEach(cb => cb(`Scanning UTXO tree... ${pct}%`));
         });
         setOnTXIDMerkletreeScanCallback((data) => {
             const pct = Math.round((data.progress ?? 0) * 100);
+            console.log('[QryptShield] TXID scan progress:', pct + '%', JSON.stringify(data));
             _scanListeners.forEach(cb => cb(`Scanning TXID tree... ${pct}%`));
         });
 
         // Balance update callback - fires whenever a scan completes
         // Consumers subscribe via subscribeBalanceUpdate() below
         setOnBalanceUpdateCallback((event: RailgunBalancesEvent) => {
+            console.log('[QryptShield] Balance update event | walletID:', event.railgunWalletID?.slice(0,8), '| chain:', event.chain?.id, '| tokens:', event.erc20Amounts?.length ?? 0);
             _balanceListeners.forEach(cb => cb(event));
         });
 
@@ -478,8 +481,11 @@ export async function getOrCreateRailgunWallet(
     );
     const mnemonic = ethers.Mnemonic.entropyToPhrase(ethers.getBytes(entropy));
 
-    // creationBlockNumbers: scan the last 1,000 blocks (~3.3 h on Sepolia) for recent deposits.
-    // With persistent DB this only runs once - subsequent loads use loadWalletByID.
+    // creationBlockNumbers: tells the engine the earliest block this wallet
+    // could have UTXOs in. Blocks before this are skipped entirely.
+    // 50,000 blocks ≈ 7 days on mainnet (12s/block) — covers typical use.
+    // This only runs once per device (IndexedDB persists scan state after that).
+    // Existing wallets (loadWalletByID path above) resume from their saved block.
     let creationBlockNumbers: Record<string, number> | null = null;
     const networkName = chainId ? RAILGUN_CHAIN_MAP[chainId] : undefined;
     const rpcUrl = chainId ? FALLBACK_RPC[chainId] : undefined;
@@ -488,9 +494,12 @@ export async function getOrCreateRailgunWallet(
             const { JsonRpcProvider } = await import("ethers");
             const provider = new JsonRpcProvider(rpcUrl);
             const currentBlock = await provider.getBlockNumber();
-            creationBlockNumbers = { [networkName]: Math.max(0, currentBlock - 1_000) };
+            // 50k blocks ≈ 7 days — enough for recent deposits, far faster than genesis scan
+            creationBlockNumbers = { [networkName]: Math.max(0, currentBlock - 50_000) };
+            console.log('[QryptShield] New wallet creationBlock:', creationBlockNumbers);
         } catch {
-            // Continue without block range optimization
+            // Continue without block range optimization — full scan from genesis
+            console.warn('[QryptShield] Could not get currentBlock, falling back to full scan');
         }
     }
 
@@ -714,14 +723,17 @@ export async function waitForRailgunBalance(
     }
 
     // Fast path - balance already spendable (resume scenario)
+    console.log('[QryptShield] waitForRailgunBalance start | walletID:', walletID.slice(0,8), '| token:', tokenAddress?.slice(0,10), '| chain:', chainId);
     if (tokenAddress && networkName) {
         const immediate = await checkRailgunBalance(walletID, networkName, tokenAddress, true);
+        console.log('[QryptShield] Fast path spendable balance:', immediate.toString());
         if (immediate > 0n) {
             onProgress?.("Pool balance confirmed: proceeding to proof.");
             return;
         }
         // Check non-spendable: UTXO is committed but POI not yet validated.
         const anyBucket = await checkRailgunBalance(walletID, networkName, tokenAddress, false);
+        console.log('[QryptShield] Fast path any-bucket balance:', anyBucket.toString());
         if (anyBucket > 0n) {
             committedAt = Date.now();
             onProgress?.("Deposit found in pool (not yet Spendable). Waiting for POI validation...");
@@ -733,8 +745,8 @@ export async function waitForRailgunBalance(
     // visit the engine resumes from that block and only new events are processed.
     // Return visits complete in seconds. Users should close and come back.
     const baseMsg = IS_MAINNET
-        ? "Building privacy index (first-time setup: 1-3 hours, saved to browser storage)..."
-        : "Building privacy index...";
+        ? "Waiting for RAILGUN pool sync (open browser console for details)..."
+        : "Waiting for RAILGUN pool sync...";
     onProgress?.(baseMsg);
 
     return new Promise<void>((resolve, reject) => {
@@ -812,7 +824,8 @@ export async function waitForRailgunBalance(
 
             // Check ALL buckets (ShieldPending, Spendable, MissingInternalPOI, etc.)
             const committed = await checkRailgunBalance(walletID, networkName, tokenAddress, false);
-            if (committed === 0n) return; // not in any bucket yet
+            console.log('[QryptShield] Balance callback | any-bucket:', committed.toString(), '| elapsed:', elapsed());
+            if (committed === 0n) { console.log('[QryptShield] UTXO not found in any bucket yet'); return; } // not in any bucket yet
 
             // Record when we first found it
             if (committedAt === null) {
@@ -822,6 +835,7 @@ export async function waitForRailgunBalance(
 
             // Check Spendable bucket
             const spendable = await checkRailgunBalance(walletID, networkName, tokenAddress, true);
+            console.log('[QryptShield] Spendable balance:', spendable.toString());
             if (spendable > 0n) {
                 cleanup();
                 onProgress?.("Pool balance spendable: proceeding to proof.");
