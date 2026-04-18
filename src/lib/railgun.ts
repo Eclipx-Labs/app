@@ -417,16 +417,19 @@ export async function loadRailgunProvider(chainId: number, onProgress?: (msg: st
     const baseConfig = NETWORK_PROVIDERS[chainId];
     if (!baseConfig) throw new Error(`No RPC configured for chainId ${chainId}.`);
 
-    // Inject dRPC paid endpoint (via Railway proxy) as priority 1.
-    // Key stays hidden server-side (DRPC_API_KEY on Railway) — never in browser bundle.
-    // Static fallbacks in NETWORK_PROVIDERS start at priority 2.
-    const config: typeof baseConfig = {
-        ...baseConfig,
-        providers: [
-            { provider: getDrpcProxyUrl(), priority: 1, weight: 5 },
-            ...baseConfig.providers,
-        ],
-    };
+    // For mainnet (chain 1): inject Railway proxy (private MAINNET_RPC_URL) as priority 1.
+    // For all other chains (Sepolia, etc.): use NETWORK_PROVIDERS config as-is —
+    // the Railway proxy only has mainnet RPC configured, injecting it for Sepolia
+    // would cause all Sepolia calls to hit a mainnet endpoint.
+    const config: typeof baseConfig = chainId === 1
+        ? {
+            ...baseConfig,
+            providers: [
+                { provider: getMainnetRpcProxyUrl(), priority: 1, weight: 5 },
+                ...baseConfig.providers,
+            ],
+        }
+        : baseConfig;
 
     onProgress?.("Connecting to network...");
 
