@@ -315,6 +315,11 @@ export default function QryptShieldLoader({ chainId, onReady, onCancel }: QryptS
                             Object.keys(localStorage)
                                 .filter(k => k.startsWith("qryptum_rg_wallet_id"))
                                 .forEach(k => localStorage.removeItem(k));
+                            // Clear stale pending transfer state — stale WETH/token pending
+                            // causes waitForRailgunBalance to check the wrong token on resume.
+                            Object.keys(localStorage)
+                                .filter(k => k.startsWith("qryptum:railgun:pending:"))
+                                .forEach(k => localStorage.removeItem(k));
                             window.location.reload();
                         }}
                         style={{ background: "none", border: "none", color: "rgba(255,255,255,0.2)", fontSize: 11, cursor: "pointer", padding: 0 }}
