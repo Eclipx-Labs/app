@@ -121,6 +121,10 @@ export default function QryptShieldPanel({
     const [phase, setPhase] = useState<"form" | "running" | "done" | "error">("form");
     const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
     const [fatalError, setFatalError] = useState<string | null>(null);
+    // When sync exceeds SYNC_USER_TIMEOUT_MS, let user close and check back later.
+    // Tokens are already in the pool (pending state saved); this is not an error.
+    const [syncTimedOut, setSyncTimedOut] = useState(false);
+    const SYNC_USER_TIMEOUT_MS = 10 * 60 * 1_000; // 10 minutes
 
     useEffect(() => {
         onLockChange?.(phase === "running");
@@ -381,12 +385,32 @@ export default function QryptShieldPanel({
 
             // ── STEP 3: Wait for Merkle tree sync ──────────────────────────
             stepActive("sync", "Syncing with Railgun pool (this may take a few minutes)...");
-            await waitForRailgunBalance(
-                railgunWalletID,
-                chainId,
-                msg => updateStep("sync", { detail: msg }),
-                token.tokenAddress,
-            );
+            {
+                // Race the actual sync against a 10-minute user-facing timeout.
+                // If the timer fires first, we surface a "close and resume" UI instead
+                // of blocking the user indefinitely. Tokens are already in the pool
+                // (pending state saved after step 2), so this is NOT a failure.
+                const SYNC_TIMED_OUT = Symbol("SYNC_TIMED_OUT");
+                const syncRace = await Promise.race([
+                    waitForRailgunBalance(
+                        railgunWalletID,
+                        chainId,
+                        msg => updateStep("sync", { detail: msg }),
+                        token.tokenAddress,
+                    ).then(() => null),
+                    new Promise<typeof SYNC_TIMED_OUT>(res =>
+                        setTimeout(() => res(SYNC_TIMED_OUT), SYNC_USER_TIMEOUT_MS)
+                    ),
+                ]);
+                if (syncRace === SYNC_TIMED_OUT) {
+                    // Surface timeout UI — do NOT proceed to proof/deliver steps.
+                    updateStep("sync", {
+                        detail: "Sync is taking longer than usual. Your tokens are safe in the pool. Close this panel and tap \"Resume Transfer\" to continue when ready.",
+                    });
+                    setSyncTimedOut(true);
+                    return; // exits handleSend; pending state stays saved for resume
+                }
+            }
             stepDone("sync");
 
             // ── STEP 4: Generate unshield ZK proof (~60 s) ─────────────────
@@ -479,6 +503,24 @@ export default function QryptShieldPanel({
                 <Header />
                 <Summary token={token} amount={amount} recipient={recipient} />
                 <Stepper steps={steps} chainId={chainId} />
+                {syncTimedOut && (
+                    <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.3)" }}>
+                        <p style={{ margin: "0 0 4px", fontSize: 12, fontWeight: 700, color: "#a78bfa" }}>Sync is still running in the background</p>
+                        <p style={{ margin: "0 0 12px", fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                            Your tokens are safe inside the Railgun pool. The pool sync can take 15-25 minutes on mainnet. Close this panel and come back — tap <strong style={{ color: "rgba(255,255,255,0.75)" }}>Resume Transfer</strong> on the form to continue where you left off.
+                        </p>
+                        <button
+                            onClick={() => {
+                                setSyncTimedOut(false);
+                                setPhase("form");
+                                setSteps(INITIAL_STEPS.map(s => ({ ...s })));
+                            }}
+                            style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", background: "none", border: "1px solid rgba(139,92,246,0.4)", borderRadius: 8, cursor: "pointer", padding: "6px 16px" }}
+                        >
+                            Close and check back later
+                        </button>
+                    </div>
+                )}
                 {phase === "error" && fatalError && (
                     <div style={{ marginTop: 16, padding: "12px 16px", borderRadius: 12, background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)" }}>
                         <p style={{ margin: "0 0 4px", fontSize: 12, fontWeight: 700, color: "#f87171" }}>Transfer failed</p>
