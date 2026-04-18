@@ -60,11 +60,12 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
             // dRPC paid (via Railway proxy) injected at priority 1 in loadRailgunProvider.
             // Static fallbacks start at priority 2.
             { provider: "https://ethereum-rpc.publicnode.com", priority: 2, weight: 4 },
-            { provider: "https://eth.llamarpc.com",            priority: 3, weight: 2 },
-            { provider: "https://1rpc.io/eth",                 priority: 4, weight: 1 },
-            // Infura ~890ms from most regions — last-resort fallback
-            { provider: "https://mainnet.infura.io/v3/2002e3032d0d4a62b933ed350e51de7c", priority: 5, weight: 1 },
-            { provider: "https://rpc.ankr.com/eth",            priority: 6, weight: 1 },
+            // dRPC public endpoint — no auth, higher rate limits, CORS OK
+            { provider: "https://eth.drpc.org",                priority: 3, weight: 3 },
+            { provider: "https://cloudflare-eth.com",          priority: 4, weight: 2 },
+            { provider: "https://rpc.ankr.com/eth",            priority: 5, weight: 1 },
+            // NOTE: eth.llamarpc.com removed — CORS blocked from browser + persistent 429
+            // NOTE: Infura public key removed — rate limited (429) on every scan batch
         ],
     },
     137: {
@@ -101,7 +102,7 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
 
 // Fallback single-URL for any network not in NETWORK_PROVIDERS
 const FALLBACK_RPC: Partial<Record<number, string>> = {
-    1: "https://mainnet.infura.io/v3/2002e3032d0d4a62b933ed350e51de7c",
+    1: "https://eth.drpc.org",
     137: "https://polygon.llamarpc.com",
     56: "https://binance.llamarpc.com",
     42161: "https://arbitrum.llamarpc.com",
