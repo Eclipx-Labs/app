@@ -86,8 +86,10 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
     11155111: {
         chainId: 11155111,
         providers: [
-            // dRPC Sepolia — no publicnode (drops connections same as mainnet)
-            { provider: "https://sepolia.drpc.org", priority: 1, weight: 1 },
+            // RAILGUN SDK FallbackProvider requires 2+ providers to validate config.
+            { provider: "https://sepolia.drpc.org",  priority: 1, weight: 2 },
+            { provider: "https://rpc.sepolia.org",   priority: 2, weight: 1 },
+            { provider: "https://1rpc.io/sepolia",   priority: 3, weight: 1 },
         ],
     },
 };
