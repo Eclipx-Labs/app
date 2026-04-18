@@ -381,6 +381,19 @@ export async function ensureRailgunEngine(onProgress?: (msg: string) => void): P
     }
 }
 
+/**
+ * Reset engine state so ensureRailgunEngine() can be retried after an error.
+ * Call this before retrying if the engine failed to initialize.
+ * Does NOT clear the IndexedDB - just resets the in-memory state machine.
+ */
+export function resetEngineState(): void {
+    if (engineState === "error") {
+        engineState = "idle";
+        engineError = null;
+        _wp = null; // force re-import of SDK on next attempt
+    }
+}
+
 // ─── Scan progress event bus ──────────────────────────────────────────────────
 
 type ScanListener = (msg: string) => void;
