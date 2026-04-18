@@ -57,15 +57,9 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
     1: {
         chainId: 1,
         providers: [
-            // dRPC paid (via Railway proxy) injected at priority 1 in loadRailgunProvider.
-            // Static fallbacks start at priority 2.
-            { provider: "https://rpc.mevblocker.io",           priority: 2, weight: 4 },
-            // dRPC public endpoint — no auth, higher rate limits, CORS OK
-            { provider: "https://eth.drpc.org",                priority: 3, weight: 3 },
-            { provider: "https://cloudflare-eth.com",          priority: 4, weight: 2 },
-            { provider: "https://rpc.ankr.com/eth",            priority: 5, weight: 1 },
-            // NOTE: eth.llamarpc.com removed — CORS blocked from browser + persistent 429
-            // NOTE: Infura public key removed — rate limited (429) on every scan batch
+            // Railway proxy (private dRPC key) injected at priority 1 by loadRailgunProvider.
+            // Public dRPC as sole fallback — no ERR_CONNECTION_CLOSED, no rate-limit.
+            { provider: "https://eth.drpc.org", priority: 2, weight: 1 },
         ],
     },
     137: {
