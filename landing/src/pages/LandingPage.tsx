@@ -357,10 +357,10 @@ export default function LandingPage() {
         }
         @media (max-width: 640px) {
           .lp-hack-border {
-            top: auto;
-            bottom: 18px;
-            left: 16px;
-            right: 16px;
+            top: 0;
+            bottom: auto;
+            left: 0;
+            right: 0;
           }
         }
         * { box-sizing: border-box; }
