@@ -1,18 +1,72 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/hack/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Qryptum Hack Contest - 100 USDC dual vault challenge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+
     <title>Qryptum Hack Contest</title>
+    <meta name="description" content="Qryptum Hack Contest — Two-factor vault security challenge. 100 USDC prize pool." />
+    <meta name="theme-color" content="#08090F" />
+
+    <link rel="icon" type="image/png" href="/hack/qryptum-logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/hack/qryptum-logo.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://qryptumorg.github.io/hack/" />
+    <meta property="og:title" content="Qryptum Hack Contest" />
+    <meta property="og:description" content="Two-factor vault security challenge. 100 USDC prize pool." />
+    <meta property="og:image" content="https://qryptumorg.github.io/hack/qryptum-logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&display=swap" rel="stylesheet">
+
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #05080f; font-family: Inter, system-ui, sans-serif; }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: #05080f; }
+
+      #loading-screen {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #05080f;
+        display: flex; align-items: center; justify-content: center;
+        transition: opacity 0.4s ease;
+      }
+      #loading-screen.done { opacity: 0; pointer-events: none; }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #loading-wrap {
+        position: relative;
+        width: 80px; height: 80px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      #loading-ring {
+        position: absolute;
+        width: 80px; height: 80px;
+        border: 2.5px solid rgba(124,58,237,0.15);
+        border-top-color: #7c3aed;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+      }
+      #loading-logo {
+        width: 40px; height: 40px;
+        border-radius: 10px;
+      }
     </style>
   </head>
   <body>
+    <div id="loading-screen">
+      <div id="loading-wrap">
+        <div id="loading-ring"></div>
+        <img id="loading-logo" src="/hack/qryptum-logo.png" alt="Qryptum" />
+      </div>
+    </div>
     <div id="root"></div>
+    <script>
+      window.addEventListener('load', function() {
+        var el = document.getElementById('loading-screen');
+        if (el) { el.classList.add('done'); setTimeout(function(){ el.remove(); }, 500); }
+      });
+    </script>
     <script type="module" src="/src/hack-entry.tsx"></script>
   </body>
 </html>
