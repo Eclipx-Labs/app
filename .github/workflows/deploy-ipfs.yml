@@ -1,5 +1,5 @@
 name: Deploy to IPFS (eth.limo)
-# triggered: 2026-04-19T09:44:13
+# triggered: 2026-04-19T10:01:59
 
 on:
   push:
@@ -33,6 +33,12 @@ jobs:
         with:
           repository: Qryptumorg/site
           path: _site
+
+      - name: Checkout hack repo (public)
+        uses: actions/checkout@v4
+        with:
+          repository: Qryptumorg/hack
+          path: _hack
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -112,6 +118,7 @@ jobs:
       # dist/qryptair/  = qryptair (qryptum.eth.limo/qryptair/)
       # dist/docs/      = docs     (qryptum.eth.limo/docs/)
       # dist/site/      = site     (qryptum.eth.limo/site/)
+      # dist/hack/      = hack     (qryptum.eth.limo/hack/)
       - name: Assemble combined dist/
         run: |
           set -euo pipefail
@@ -128,6 +135,10 @@ jobs:
 
           mkdir -p dist/site
           cp -r _site/dist/. dist/site/
+
+          mkdir -p dist/hack
+                    cp -r _hack/. dist/hack/
+                    rm -rf dist/hack/.git
 
           if [ -d "landing/dist/public" ]; then
             cp -r landing/dist/public/. dist/
