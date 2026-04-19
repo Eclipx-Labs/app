@@ -1,3 +1,4 @@
+// build: 2026-04-19T14:29:59.509Z
 import { useState, useEffect, useRef } from "react";
 
 const API = "https://qryptum-api.up.railway.app/api";
