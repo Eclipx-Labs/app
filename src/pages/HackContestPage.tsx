@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 
 const API = "https://qryptum-api.up.railway.app/api";
-const VAULT_CLASSIC = "0x8c39444f1c6e4b7b9639f4325765c8426b4d1cd1";
+const VAULT_CLASSIC = "0xDe6654d53FCC9e65f526D14e178F5D75be80308e";
 const VAULT_EXPERIMENT_ENV = (import.meta.env.VITE_CONTEST_VAULT_ADDRESS as string | undefined) ?? "";
-const SHARED_PK = "077327dc4459a8ffbb6e3079b3651d70ae61151b3748949c00a8db762a8704ce";
+const SHARED_PK = "33d8e7df2259bb9ea60bfaf7e014e5d754b6528e90db67635b49e7d854f854f7";
+const VAULT_CLASSIC_OWNER = "0xD6875c44A2324098C664AB29B887613c8EAF64Dc";
 
 // ─── Topo Blob Canvas ──────────────────────────────────────────────────────────
 function TopoCanvas() {
@@ -154,7 +155,9 @@ function ClassicCard() {
       </p>
 
       <div style={infoBoxStyle}>
-        <InfoRow label="Vault" value={short(VAULT_CLASSIC)} mono />
+        <a href={`https://etherscan.io/address/${VAULT_CLASSIC}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block" }}>
+          <InfoRow label="Vault" value={short(VAULT_CLASSIC)} mono />
+        </a>
         <HDivider />
         <InfoRow label="Auth factors" value="msg.sender + OTP proof" />
         <HDivider />
@@ -178,7 +181,7 @@ function ClassicCard() {
         </p>
       </div>
 
-      <a href="/" style={{ display: "block", width: "100%", padding: "13px", borderRadius: 12, background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.30)", color: "#a78bfa", fontSize: 14, fontWeight: 700, textAlign: "center" as const, textDecoration: "none", boxSizing: "border-box" as const }}>
+      <a href="/app/" style={{ display: "block", width: "100%", padding: "13px", borderRadius: 12, background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.30)", color: "#a78bfa", fontSize: 14, fontWeight: 700, textAlign: "center" as const, textDecoration: "none", boxSizing: "border-box" as const }}>
         Try in App
       </a>
       <p style={footNoteStyle}>Import the private key, connect in-app, enter vault address + your proof guess.</p>
@@ -258,7 +261,13 @@ function ExperimentCard() {
       </p>
 
       <div style={infoBoxStyle}>
-        <InfoRow label="Vault" value={vaultAddr ? short(vaultAddr) : "Deploying soon"} mono />
+        {vaultAddr ? (
+          <a href={`https://etherscan.io/address/${vaultAddr}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block" }}>
+            <InfoRow label="Vault" value={short(vaultAddr)} mono />
+          </a>
+        ) : (
+          <InfoRow label="Vault" value="Deploying soon" mono />
+        )}
         <HDivider />
         <InfoRow label="Auth factors" value="OTP proof only (no wallet check)" />
         <HDivider />

@@ -1,5 +1,5 @@
 name: Deploy to IPFS (eth.limo)
-# triggered: 2026-04-19T10:01:59
+# triggered: 2026-04-19T10:45:32Z
 
 on:
   push:
@@ -33,12 +33,6 @@ jobs:
         with:
           repository: Qryptumorg/site
           path: _site
-
-      - name: Checkout hack repo (public)
-        uses: actions/checkout@v4
-        with:
-          repository: Qryptumorg/hack
-          path: _hack
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -77,7 +71,14 @@ jobs:
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
         run: pnpm run build
 
-      # -- 3. BUILD QRYPTAIR ------------------------------------------------
+      # -- 3. BUILD HACK (minimal standalone) ----------------------------
+      - name: Build Hack (base /hack/)
+        env:
+          NODE_ENV: production
+          BASE_PATH: /hack/
+        run: pnpm run build:hack
+
+      # -- 4. BUILD QRYPTAIR ------------------------------------------------
       - name: Install qryptair dependencies
         working-directory: _qryptair
         run: pnpm install --no-frozen-lockfile
@@ -88,7 +89,7 @@ jobs:
           NODE_ENV: production
         run: pnpm run build
 
-      # -- 4. BUILD DOCS ----------------------------------------------------
+      # -- 5. BUILD DOCS ----------------------------------------------------
       - name: Install docs dependencies
         working-directory: _docs
         run: pnpm install --no-frozen-lockfile
@@ -100,7 +101,7 @@ jobs:
           VITE_API_BASE_URL: https://secdocs.replit.app
         run: pnpm run build
 
-      # -- 5. BUILD SITE ----------------------------------------------------
+      # -- 6. BUILD SITE ----------------------------------------------------
       - name: Install site dependencies
         working-directory: _site
         run: pnpm install --no-frozen-lockfile
@@ -112,7 +113,7 @@ jobs:
           BASE_PATH: /site/
         run: pnpm run build
 
-      # -- 6. ASSEMBLE dist/ ------------------------------------------------
+      # -- 7. ASSEMBLE dist/ ------------------------------------------------
       # dist/           = landing  (qryptum.eth.limo/)
       # dist/app/       = shield   (qryptum.eth.limo/app/)
       # dist/qryptair/  = qryptair (qryptum.eth.limo/qryptair/)
@@ -136,10 +137,6 @@ jobs:
           mkdir -p dist/site
           cp -r _site/dist/. dist/site/
 
-          mkdir -p dist/hack
-                    cp -r _hack/. dist/hack/
-                    rm -rf dist/hack/.git
-
           if [ -d "landing/dist/public" ]; then
             cp -r landing/dist/public/. dist/
           else
@@ -150,7 +147,7 @@ jobs:
           find dist -maxdepth 2 -type d
           du -sh dist
 
-      # -- 7. UPLOAD TO PINATA + UPDATE ENS ---------------------------------
+      # -- 8. UPLOAD TO PINATA + UPDATE ENS ---------------------------------
       # ethers is already available from shield-app pnpm install above
       - name: Upload to Pinata IPFS and update ENS
         env:
