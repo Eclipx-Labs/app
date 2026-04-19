@@ -66,7 +66,14 @@ jobs:
           VITE_REOWN_PROJECT_ID: ${{ secrets.VITE_REOWN_PROJECT_ID }}
         run: pnpm run build
 
-      # ── 3. ASSEMBLE PAGES ────────────────────────────────────────────
+      # ── 3. BUILD HACK (minimal standalone, no WalletConnect) ─────────
+      - name: Build Hack (base /hack/)
+        env:
+          NODE_ENV: production
+          BASE_PATH: /hack/
+        run: pnpm run build:hack
+
+      # ── 4. ASSEMBLE PAGES ────────────────────────────────────────────
       # _pages/            = landing  -> /app/
       # _pages/app/        = shield   -> /app/app/
       # _pages/qryptair/   = redirect -> qryptumorg.github.io/qryptair/
@@ -77,6 +84,10 @@ jobs:
 
           # Shield -> _pages/app/
           cp -r dist/public/. _pages/app/
+
+          # Hack -> _pages/hack/
+          mkdir -p _pages/hack
+          cp -r dist/hack/. _pages/hack/
 
           # QryptAir: redirect to its own standalone GitHub Pages deployment
           cat > _pages/qryptair/index.html << 'EOF'
