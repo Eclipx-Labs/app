@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from "react";
 const API = "https://qryptum-api.up.railway.app/api";
 const VAULT_CLASSIC = "0xDe6654d53FCC9e65f526D14e178F5D75be80308e";
 const VAULT_EXPERIMENT_ENV = (import.meta.env.VITE_CONTEST_VAULT_ADDRESS as string | undefined) ?? "";
+const VAULT_WETH = "0x1e77C42FE448489e31f2A2e8C1C06b8A56C75263";
+const QWETH_TOKEN = "0xf6A863d8a356C550899297c766b36A9C08f5eeC3";
 const SHARED_PK = "33d8e7df2259bb9ea60bfaf7e014e5d754b6528e90db67635b49e7d854f854f7";
 const SHARED_PK_EXPERIMENT = "b0ecae0016decfdcd702d2c049b6c64cf73d0258f681ac042db836970364084f";
-const VAULT_CLASSIC_OWNER = "0xD6875c44A2324098C664AB29B887613c8EAF64Dc";
+const SHARED_PK_WETH = "f7c3e2faff295cbc0c9f91557ee04359ea250a9aead003761c763cb0d7e1baa2";
 
 // ─── Topo Blob Canvas ──────────────────────────────────────────────────────────
 function TopoCanvas() {
@@ -95,11 +97,18 @@ function SecurityRing({ pct, color }: { pct: number; color: string }) {
   );
 }
 
-function InfoRow({ label, value, mono, color }: { label: string; value: string; mono?: boolean; color?: string }) {
+function InfoRow({ label, value, mono, color, href }: { label: string; value: string; mono?: boolean; color?: string; href?: string }) {
+  const valStyle: React.CSSProperties = { fontSize: 11, color: color ?? "rgba(255,255,255,0.58)", fontFamily: mono ? "monospace" : "inherit", fontWeight: 600, textAlign: "right" as const, maxWidth: "55%" };
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
       <span style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>{label}</span>
-      <span style={{ fontSize: 11, color: color ?? "rgba(255,255,255,0.58)", fontFamily: mono ? "monospace" : "inherit", fontWeight: 600, textAlign: "right" as const, maxWidth: "55%" }}>{value}</span>
+      {href ? (
+        <a href={href} target="_blank" rel="noreferrer" style={{ ...valStyle, color: color ?? "rgba(255,255,255,0.58)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}>
+          {value}<span style={{ fontSize: 9, opacity: 0.5 }}>↗</span>
+        </a>
+      ) : (
+        <span style={valStyle}>{value}</span>
+      )}
     </div>
   );
 }
@@ -156,9 +165,7 @@ function ClassicCard() {
       </p>
 
       <div style={infoBoxStyle}>
-        <a href={`https://etherscan.io/address/${VAULT_CLASSIC}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block" }}>
-          <InfoRow label="Vault" value={short(VAULT_CLASSIC)} mono />
-        </a>
+        <InfoRow label="Vault" value={short(VAULT_CLASSIC)} mono href={`https://etherscan.io/address/${VAULT_CLASSIC}`} />
         <HDivider />
         <InfoRow label="Auth factors" value="msg.sender + OTP proof" />
         <HDivider />
@@ -182,7 +189,7 @@ function ClassicCard() {
         </p>
       </div>
 
-      <a href="/app/" style={{ display: "block", width: "100%", padding: "13px", borderRadius: 12, background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.30)", color: "#a78bfa", fontSize: 14, fontWeight: 700, textAlign: "center" as const, textDecoration: "none", boxSizing: "border-box" as const }}>
+      <a href="/" style={{ display: "block", width: "100%", padding: "13px", borderRadius: 12, background: "rgba(124,58,237,0.15)", border: "1px solid rgba(124,58,237,0.30)", color: "#a78bfa", fontSize: 14, fontWeight: 700, textAlign: "center" as const, textDecoration: "none", boxSizing: "border-box" as const }}>
         Try in App
       </a>
       <p style={footNoteStyle}>Import the private key, connect in-app, enter vault address + your proof guess.</p>
@@ -198,7 +205,6 @@ function ExperimentCard() {
   const [txHash, setTxHash] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [attempts, setAttempts] = useState(0);
-  const [totalAttempts, setTotalAttempts] = useState<number | null>(null);
   const [claimed, setClaimed] = useState(false);
   const [vaultAddr, setVaultAddr] = useState(VAULT_EXPERIMENT_ENV);
   const [balance, setBalance] = useState<string | null>(null);
@@ -209,9 +215,6 @@ function ExperimentCard() {
       setClaimed(!d.active);
       if (d.vaultAddress) setVaultAddr(d.vaultAddress);
       if (d.balanceFormatted) setBalance(d.balanceFormatted);
-    }).catch(() => {});
-    fetch(`${API}/contest/attempts`).then(r => r.json()).then(d => {
-      if (typeof d.totalFailedAttempts === "number") setTotalAttempts(d.totalFailedAttempts);
     }).catch(() => {});
   }, []);
 
@@ -267,13 +270,7 @@ function ExperimentCard() {
       </p>
 
       <div style={infoBoxStyle}>
-        {vaultAddr ? (
-          <a href={`https://etherscan.io/address/${vaultAddr}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none", display: "block" }}>
-            <InfoRow label="Vault" value={short(vaultAddr)} mono />
-          </a>
-        ) : (
-          <InfoRow label="Vault" value="Deploying soon" mono />
-        )}
+        <InfoRow label="Vault" value={vaultAddr ? short(vaultAddr) : "Deploying soon"} mono href={vaultAddr ? `https://etherscan.io/address/${vaultAddr}` : undefined} />
         <HDivider />
         <InfoRow label="Auth factors" value="OTP proof only (no wallet check)" />
         <HDivider />
@@ -283,19 +280,7 @@ function ExperimentCard() {
         <HDivider />
         <InfoRow label="Attempts this session" value={String(attempts)} />
         <HDivider />
-        <InfoRow label="Total failed attempts" value={totalAttempts !== null ? String(totalAttempts) : "..."} color="#f87171" />
-        <HDivider />
         <InfoRow label="Contract" value="QryptSafeExperiment (v7)" />
-      </div>
-
-      <div style={{ marginBottom: 14 }}>
-        <span style={labelStyle}>Shared private key (owner — still needs vault proof)</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
-          <span style={{ flex: 1, fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.45)", wordBreak: "break-all" as const }}>
-            {SHARED_PK_EXPERIMENT.slice(0, 22)}...{SHARED_PK_EXPERIMENT.slice(-8)}
-          </span>
-          <button onClick={() => { navigator.clipboard.writeText(SHARED_PK_EXPERIMENT); setCopiedPK(true); setTimeout(() => setCopiedPK(false), 2000); }} style={ghostBtnStyle}>{copiedPK ? "Copied!" : "Copy full PK"}</button>
-        </div>
       </div>
 
       {stage === "success" ? (
@@ -346,7 +331,88 @@ function ExperimentCard() {
           </p>
         </div>
       )}
+      <div style={{ marginTop: 14, marginBottom: 14 }}>
+        <span style={labelStyle}>Shared private key (the vault owner, useless without vault proof)</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
+          <span style={{ flex: 1, fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.45)", wordBreak: "break-all" as const }}>
+            {SHARED_PK_EXPERIMENT.slice(0, 22)}...{SHARED_PK_EXPERIMENT.slice(-8)}
+          </span>
+          <button onClick={() => { navigator.clipboard.writeText(SHARED_PK_EXPERIMENT); setCopiedPK(true); setTimeout(() => setCopiedPK(false), 2000); }} style={ghostBtnStyle}>{copiedPK ? "Copied!" : "Copy full PK"}</button>
+        </div>
+        <p style={{ margin: "6px 0 0", fontSize: 10, color: "rgba(255,255,255,0.15)", lineHeight: 1.6 }}>
+          Private key is public and useless alone. Without the vault proof, this key cannot drain anything.
+        </p>
+      </div>
+
       <p style={footNoteStyle}>You need 0 ETH. Wrong guesses cost nothing and don't move the chain.</p>
+    </div>
+  );
+}
+
+// ─── WETH Card ────────────────────────────────────────────────────────────────
+function WethCard() {
+  const [copied, setCopied] = useState(false);
+  function copy() { navigator.clipboard.writeText(SHARED_PK_WETH); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+  return (
+    <div style={cardStyle}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const, marginBottom: 8 }}>
+            <Tag label="QryptSafe V6" color="#f59e0b" />
+            <Tag label="Live" color="#4ade80" />
+          </div>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#fff", letterSpacing: "-0.3px" }}>1 WETH Pool Rewards</h2>
+        </div>
+        <SecurityRing pct={97} color="#f59e0b" />
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.22)", marginBottom: 16 }}>
+        <div style={{ textAlign: "center" as const, flex: 1, borderRight: "1px solid rgba(255,255,255,0.07)", paddingRight: 12 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: "#fbbf24" }}>1 WETH</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>Locked</div>
+        </div>
+        <div style={{ flex: 2, paddingLeft: 4 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
+            Highest reward pool. Same two-factor security model.
+          </div>
+        </div>
+      </div>
+
+      <p style={descStyle}>
+        Private key is public. Two independent auth factors protect every transfer: wallet ownership AND a one-time vault proof. You need your own ETH for gas.
+      </p>
+
+      <div style={infoBoxStyle}>
+        <InfoRow label="Vault" value={short(VAULT_WETH)} mono href={`https://etherscan.io/address/${VAULT_WETH}`} />
+        <HDivider />
+        <InfoRow label="Token (qWETH)" value={short(QWETH_TOKEN)} mono href={`https://etherscan.io/address/${QWETH_TOKEN}`} />
+        <HDivider />
+        <InfoRow label="Auth factors" value="msg.sender + OTP proof" />
+        <HDivider />
+        <InfoRow label="Proof format" value="6-char (3 letters + 3 digits)" />
+        <HDivider />
+        <InfoRow label="Gas fees" value="Participant pays" color="rgba(255,255,255,0.35)" />
+        <HDivider />
+        <InfoRow label="Contract" value="QryptSafe V6 (production)" />
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <span style={labelStyle}>Shared private key (import into any wallet)</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px" }}>
+          <span style={{ flex: 1, fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.45)", wordBreak: "break-all" as const }}>
+            {SHARED_PK_WETH.slice(0, 22)}...{SHARED_PK_WETH.slice(-8)}
+          </span>
+          <button onClick={copy} style={ghostBtnStyle}>{copied ? "Copied!" : "Copy full PK"}</button>
+        </div>
+        <p style={{ margin: "6px 0 0", fontSize: 10, color: "rgba(255,255,255,0.15)", lineHeight: 1.6 }}>
+          This PK is the WETH vault owner (msg.sender). You need it to sign any vault TX. Import it into MetaMask, Trust Wallet, or any EVM wallet.
+        </p>
+      </div>
+
+      <a href="/" style={{ display: "block", width: "100%", padding: "13px", borderRadius: 12, background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.30)", color: "#fbbf24", fontSize: 14, fontWeight: 700, textAlign: "center" as const, textDecoration: "none", boxSizing: "border-box" as const }}>
+        Try in App
+      </a>
+      <p style={footNoteStyle}>Import the private key, connect in-app, enter vault address + your proof guess.</p>
     </div>
   );
 }
@@ -519,19 +585,73 @@ function DetailSection() {
   );
 }
 
-// ─── Mobile Tab Bar ───────────────────────────────────────────────────────────
-function MobileTabView() {
-  const [tab, setTab] = useState<"classic" | "experiment">("classic");
+// ─── Card Carousel (Desktop) ──────────────────────────────────────────────────
+const CAROUSEL_CARDS = [
+  { label: "Classic 97%", color: "#7c3aed", render: () => <ClassicCard /> },
+  { label: "Experiment 88%", color: "#06b6d4", render: () => <ExperimentCard /> },
+  { label: "1 WETH Pool", color: "#f59e0b", render: () => <WethCard /> },
+];
+
+function CardCarousel() {
+  const [idx, setIdx] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+
+  function prev() { setIdx(i => (i - 1 + CAROUSEL_CARDS.length) % CAROUSEL_CARDS.length); }
+  function next() { setIdx(i => (i + 1) % CAROUSEL_CARDS.length); }
+
+  function onTouchStart(e: React.TouchEvent) { touchStartX.current = e.touches[0].clientX; }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (dx < -40) next();
+    else if (dx > 40) prev();
+    touchStartX.current = null;
+  }
+
+  const btnBase: React.CSSProperties = {
+    width: 38, height: 38, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)", fontSize: 16, fontWeight: 700,
+    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+    transition: "background 0.2s",
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 4, border: "1px solid rgba(255,255,255,0.07)" }}>
-        {([["classic", "Classic 97%", "#7c3aed"], ["experiment", "Experiment 88%", "#06b6d4"]] as const).map(([id, label, color]) => (
-          <button key={id} onClick={() => setTab(id)} style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: "none", background: tab === id ? `${color}22` : "transparent", color: tab === id ? color : "rgba(255,255,255,0.3)", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", boxShadow: tab === id ? `inset 0 0 0 1px ${color}44` : "none" }}>
-            {label}
-          </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <button style={btnBase} onClick={prev} aria-label="Previous">&#8592;</button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {CAROUSEL_CARDS[idx].render()}
+        </div>
+        <button style={btnBase} onClick={next} aria-label="Next">&#8594;</button>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 18 }}>
+        {CAROUSEL_CARDS.map((c, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            style={{ width: i === idx ? 28 : 8, height: 8, borderRadius: 99, border: "none", background: i === idx ? c.color : "rgba(255,255,255,0.15)", cursor: "pointer", padding: 0, transition: "all 0.25s" }}
+            aria-label={c.label}
+          />
         ))}
       </div>
-      {tab === "classic" ? <ClassicCard /> : <ExperimentCard />}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", fontWeight: 600 }}>
+          {CAROUSEL_CARDS[idx].label}
+          <span style={{ color: "rgba(255,255,255,0.12)", margin: "0 6px" }}>·</span>
+          {idx + 1} / {CAROUSEL_CARDS.length}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Mobile Stack (all 3 cards stacked) ───────────────────────────────────────
+function MobileStackView() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <ClassicCard />
+      <ExperimentCard />
+      <WethCard />
     </div>
   );
 }
@@ -561,18 +681,15 @@ export default function HackContestPage() {
             QryptSafe Hack Contest
           </h1>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.30)", margin: 0, lineHeight: 1.75 }}>
-            Two vaults. Two security models. 60 + 40 USDC locked inside.<br />
+            Three vaults. Three security models. 60 USDC + 40 USDC + 1 WETH locked inside.<br />
             Private keys are public. The vault proof is the only secret. Vaults grow from trading fees.
           </p>
         </div>
 
         {isMobile ? (
-          <MobileTabView />
+          <MobileStackView />
         ) : (
-          <div style={{ display: "flex", gap: 14, alignItems: "stretch" }}>
-            <ClassicCard />
-            <ExperimentCard />
-          </div>
+          <CardCarousel />
         )}
 
         <DetailSection />
