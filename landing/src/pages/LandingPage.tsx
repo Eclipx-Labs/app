@@ -7,6 +7,7 @@ import logoReown from "@/assets/logo-reown.png";
 import logoEns from "@/assets/logo-ens.png";
 import logoPinata from "@/assets/logo-pinata.png";
 import logoEthlimo from "@/assets/logo-ethlimo.png";
+import logoDexscreener from "@/assets/logo-dexscreener.png";
 
 const qLogo = import.meta.env.BASE_URL + "qryptum-logo.webp";
 
@@ -289,6 +290,19 @@ function QryptCA() {
         textTransform: "uppercase", flexShrink: 0,
         fontFamily: "'Courier New', monospace",
       }}>Etherscan &#8599;</a>
+      <a href="https://dexscreener.com/ethereum/0xf81da48c15d2f9a855c2751800792e2ab3bbcecd"
+        target="_blank" rel="noopener noreferrer"
+        title="View on Dexscreener"
+        style={{ display: "flex", alignItems: "center", flexShrink: 0, opacity: 0.5, transition: "opacity 0.2s" }}
+        onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.opacity = "1"}
+        onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.opacity = "0.5"}
+      >
+        <img src={logoDexscreener} alt="Dexscreener" width={13} height={13} style={{
+          objectFit: "contain",
+          borderRadius: "50%",
+          filter: "brightness(0) saturate(100%) invert(62%) sepia(20%) saturate(500%) hue-rotate(185deg) brightness(95%)",
+        }} />
+      </a>
     </div>
   );
 }
