@@ -32,27 +32,14 @@ const inlineWasmPlugin = {
   },
 };
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
+const rawPort = process.env.PORT ?? "19470";
 const port = Number(rawPort);
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+const basePath = process.env.BASE_PATH ?? "/";
 
 // Ensure basePath always ends with / so %BASE_URL% substitution works correctly
 const normalizedBase = basePath.endsWith("/") ? basePath : basePath + "/";
@@ -140,15 +127,11 @@ export default defineConfig({
     emptyOutDir: true,
     target: "esnext",
     rollupOptions: {
-      output: {
-        manualChunks(id) {
-          // Keep @railgun-community/wallet in its own chunk — lazy-loaded on
-          // first shield action, completely separate from the app shell.
-          if (id.includes("@railgun-community/wallet")) return "vendor-railgun";
-          // NOTE: do NOT split wagmi/viem — they have tight initialization order
-          // dependencies with @tanstack/react-query that break when isolated.
-        },
-      },
+      // manualChunks removed: @railgun-community/wallet 10.8.5 has internal circular
+      // dependencies that cause TDZ ("Cannot access 'x' before initialization") when
+      // Rollup force-splits it into a named chunk. Letting Rollup resolve chunking
+      // naturally from the dynamic import in railgun.ts fixes initialization order.
+      // wagmi/viem are NOT split either — see previous note about @tanstack/react-query.
     },
   },
   server: {

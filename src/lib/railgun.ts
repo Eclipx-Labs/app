@@ -57,12 +57,14 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
     1: {
         chainId: 1,
         providers: [
-            // Railway proxy (private MAINNET_RPC_URL) injected at priority 1 by loadRailgunProvider.
-            // 3 public no-key mainnet fallbacks — RAILGUN SDK FallbackProvider needs 2+ static
-            // providers so it doesn't throw "Invalid fallback provider config" if Railway is slow.
-            { provider: "https://eth.drpc.org",         priority: 2, weight: 2 },
-            { provider: "https://rpc.flashbots.net",    priority: 3, weight: 1 },
-            { provider: "https://rpc.mevblocker.io",    priority: 4, weight: 1 },
+            // dRPC paid (via Railway proxy) injected at priority 1 in loadRailgunProvider.
+            // Static fallbacks start at priority 2.
+            { provider: "https://ethereum-rpc.publicnode.com", priority: 2, weight: 4 },
+            { provider: "https://eth.llamarpc.com",            priority: 3, weight: 2 },
+            { provider: "https://1rpc.io/eth",                 priority: 4, weight: 1 },
+            // Infura ~890ms from most regions — last-resort fallback
+            { provider: "https://mainnet.infura.io/v3/2002e3032d0d4a62b933ed350e51de7c", priority: 5, weight: 1 },
+            { provider: "https://rpc.ankr.com/eth",            priority: 6, weight: 1 },
         ],
     },
     137: {
@@ -89,35 +91,49 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
     11155111: {
         chainId: 11155111,
         providers: [
-            // RAILGUN SDK FallbackProvider requires 2+ providers to validate config.
-            { provider: "https://sepolia.drpc.org",  priority: 1, weight: 2 },
-            { provider: "https://rpc.sepolia.org",   priority: 2, weight: 1 },
-            { provider: "https://1rpc.io/sepolia",   priority: 3, weight: 1 },
+            // Public fallbacks — proxy (injected at priority 1 in loadRailgunProvider) takes precedence.
+            // maxLogsPerBatch: 1 per Railgun docs recommendation for stability.
+            { provider: "https://ethereum-sepolia-rpc.publicnode.com", priority: 2, weight: 2, maxLogsPerBatch: 1 },
+            { provider: "https://rpc.sepolia.org",                     priority: 3, weight: 1, maxLogsPerBatch: 1 },
+            { provider: "https://rpc2.sepolia.org",                    priority: 4, weight: 1, maxLogsPerBatch: 1 },
+            { provider: "https://sepolia.drpc.org",                    priority: 5, weight: 1, maxLogsPerBatch: 1 },
         ],
     },
 };
 
 // Fallback single-URL for any network not in NETWORK_PROVIDERS
 const FALLBACK_RPC: Partial<Record<number, string>> = {
-    1: "https://eth.drpc.org",
+    1: "https://mainnet.infura.io/v3/2002e3032d0d4a62b933ed350e51de7c",
     137: "https://polygon.llamarpc.com",
     56: "https://binance.llamarpc.com",
     42161: "https://arbitrum.llamarpc.com",
-    11155111: "https://sepolia.drpc.org",
+    11155111: "https://ethereum-sepolia-rpc.publicnode.com",
 };
 
 export const PUBLIC_RPC = FALLBACK_RPC;
 
 /**
  * Compute the Qryptum API base URL (same logic as api.ts).
- * Used to build the mainnet RPC proxy URL so the private RPC key stays server-side.
+ * Used to build the RPC proxy URLs so private RPC keys stay server-side.
+ *
+ * IMPORTANT: Must return an ABSOLUTE URL.
+ * ethers.js JsonRpcProvider (used inside Railgun SDK's createFallbackProviderFromJsonConfig)
+ * calls `new URL(providerUrl)` which throws for relative URLs in some environments.
+ * In dev, we construct the absolute URL from window.location.origin so the Replit
+ * reverse proxy correctly routes /api/... to the API server on port 8080.
  */
 function getApiBase(): string {
     const rawBase = (import.meta.env.VITE_API_BASE as string | undefined)
         ?.replace(/\/api\/?$/, "")
         ?.replace(/\/$/, "");
     if (rawBase) return `${rawBase}/api`;
-    if (import.meta.env.DEV) return `${import.meta.env.BASE_URL}api`;
+    if (import.meta.env.DEV) {
+        // Use absolute URL — ethers.js requires absolute URLs for JsonRpcProvider.
+        // window.location.origin is the Replit dev domain; the reverse proxy routes
+        // /api/* to the API server regardless of which artifact the page is served from.
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        return `${origin}/api`;
+    }
     return "https://qryptum-api.up.railway.app/api";
 }
 
@@ -129,6 +145,11 @@ function getMainnetRpcProxyUrl(): string {
 /** POST /api/rpc/drpc - server-side proxy to dRPC paid endpoint (DRPC_API_KEY on Railway). */
 function getDrpcProxyUrl(): string {
     return `${getApiBase()}/rpc/drpc`;
+}
+
+/** POST /api/rpc/11155111 - server-side proxy to SEPOLIA_RPC_URL (Alchemy). */
+function getSepoliaRpcProxyUrl(): string {
+    return `${getApiBase()}/rpc/11155111`;
 }
 
 // ─── Step 3 - IndexedDB artifact store ───────────────────────────────────────
@@ -295,18 +316,14 @@ export async function ensureRailgunEngine(onProgress?: (msg: string) => void): P
         // The second entry is a real retry fallback — SDK cycles through the list
         // on connection errors, giving us two attempts before marking POI unavailable.
         const poiNodeURLs = [
-            // Railway proxy → ppoi-agg.horsewithsixlegs.xyz
-            // Browser XHR drops connection (ERR_CONNECTION_CLOSED) to the aggregator directly.
-            // Node.js server-side fetch works fine. Railway proxy fixes this gap.
-            `${getApiBase()}/poi`,
-            // Direct aggregator as fallback (may fail from browser but SDK retries)
             "https://ppoi-agg.horsewithsixlegs.xyz",
+            "https://ppoi-agg.horsewithsixlegs.xyz", // retry fallback (only known public aggregator)
         ];
 
         await startRailgunEngine(
             "qryptum",      // walletSource - max 16 chars, lowercase
             db,
-            true,           // shouldDebug - logs RAILGUN SDK internals to browser console
+            false,          // shouldDebug
             artifactStore,
             false,          // useNativeArtifacts (browser = false)
             false,          // skipMerkletreeScans: false = full UTXO+TXID Merkle tree sync.
@@ -353,19 +370,16 @@ export async function ensureRailgunEngine(onProgress?: (msg: string) => void): P
         // Consumers subscribe via subscribeScanProgress() below
         setOnUTXOMerkletreeScanCallback((data) => {
             const pct = Math.round((data.progress ?? 0) * 100);
-            console.log('[QryptShield] UTXO scan progress:', pct + '%', JSON.stringify(data));
             _scanListeners.forEach(cb => cb(`Scanning UTXO tree... ${pct}%`));
         });
         setOnTXIDMerkletreeScanCallback((data) => {
             const pct = Math.round((data.progress ?? 0) * 100);
-            console.log('[QryptShield] TXID scan progress:', pct + '%', JSON.stringify(data));
             _scanListeners.forEach(cb => cb(`Scanning TXID tree... ${pct}%`));
         });
 
         // Balance update callback - fires whenever a scan completes
         // Consumers subscribe via subscribeBalanceUpdate() below
         setOnBalanceUpdateCallback((event: RailgunBalancesEvent) => {
-            console.log('[QryptShield] Balance update event | walletID:', event.railgunWalletID?.slice(0,8), '| chain:', event.chain?.id, '| tokens:', event.erc20Amounts?.length ?? 0);
             _balanceListeners.forEach(cb => cb(event));
         });
 
@@ -378,19 +392,6 @@ export async function ensureRailgunEngine(onProgress?: (msg: string) => void): P
         engineWaiters.forEach(w => w.reject(engineError!));
         engineWaiters.length = 0;
         throw engineError;
-    }
-}
-
-/**
- * Reset engine state so ensureRailgunEngine() can be retried after an error.
- * Call this before retrying if the engine failed to initialize.
- * Does NOT clear the IndexedDB - just resets the in-memory state machine.
- */
-export function resetEngineState(): void {
-    if (engineState === "error") {
-        engineState = "idle";
-        engineError = null;
-        _wp = null; // force re-import of SDK on next attempt
     }
 }
 
@@ -435,19 +436,21 @@ export async function loadRailgunProvider(chainId: number, onProgress?: (msg: st
     const baseConfig = NETWORK_PROVIDERS[chainId];
     if (!baseConfig) throw new Error(`No RPC configured for chainId ${chainId}.`);
 
-    // For mainnet (chain 1): inject Railway proxy (private MAINNET_RPC_URL) as priority 1.
-    // For all other chains (Sepolia, etc.): use NETWORK_PROVIDERS config as-is —
-    // the Railway proxy only has mainnet RPC configured, injecting it for Sepolia
-    // would cause all Sepolia calls to hit a mainnet endpoint.
-    const config: typeof baseConfig = chainId === 1
-        ? {
-            ...baseConfig,
-            providers: [
-                { provider: getMainnetRpcProxyUrl(), priority: 1, weight: 5 },
-                ...baseConfig.providers,
-            ],
-        }
-        : baseConfig;
+    // Inject private RPC proxy as priority 1 (key stays server-side, never in browser bundle).
+    // - Sepolia (11155111): dRPC Sepolia via /api/rpc/11155111 (DRPC_SEPOLIA_URL)
+    // - Mainnet (1): dRPC via /api/rpc/drpc (DRPC_API_KEY on Railway)
+    // Static fallbacks in NETWORK_PROVIDERS start at priority 2.
+    const privateProxyUrl = chainId === 11155111 ? getSepoliaRpcProxyUrl() : getDrpcProxyUrl();
+    const config: typeof baseConfig = {
+        ...baseConfig,
+        providers: [
+            // Priority 1: private dRPC proxy (key stays server-side).
+            // weight 5 is high enough to form quorum alone with ethers.js v6 default quorum=2.
+            // maxLogsPerBatch: 1 per Railgun docs recommendation.
+            { provider: privateProxyUrl, priority: 1, weight: 5, maxLogsPerBatch: 1 },
+            ...baseConfig.providers,
+        ],
+    };
 
     onProgress?.("Connecting to network...");
 
@@ -474,7 +477,6 @@ export async function getOrCreateRailgunWallet(
     encryptionKey: string,
     chainId?: number,
     onProgress?: (msg: string) => void,
-    startBlock?: number,
 ): Promise<string> {
     const key = `${WALLET_ID_KEY}_${walletAddress.toLowerCase()}`;
     const rawKey = encryptionKey.startsWith("0x") ? encryptionKey.slice(2) : encryptionKey;
@@ -500,49 +502,19 @@ export async function getOrCreateRailgunWallet(
     );
     const mnemonic = ethers.Mnemonic.entropyToPhrase(ethers.getBytes(entropy));
 
-    // creationBlockNumbers: tells the engine the earliest block this wallet
-    // could have UTXOs in. Blocks before this are skipped entirely.
-    // 50,000 blocks ≈ 7 days on mainnet (12s/block) — covers typical use.
-    // This only runs once per device (IndexedDB persists scan state after that).
-    // Existing wallets (loadWalletByID path above) resume from their saved block.
+    // creationBlockNumbers: scan the last 1,000 blocks (~3.3 h on Sepolia) for recent deposits.
+    // With persistent DB this only runs once - subsequent loads use loadWalletByID.
     let creationBlockNumbers: Record<string, number> | null = null;
     const networkName = chainId ? RAILGUN_CHAIN_MAP[chainId] : undefined;
-    if (networkName) {
-        if (startBlock !== undefined) {
-            // Caller resolved the exact TX block of the user's deposit — start scan right there.
-            // This is the most precise option: no wasted scan before the deposit, no missed UTXOs.
-            creationBlockNumbers = { [networkName]: startBlock };
-            console.log('[QryptShield] New wallet creationBlock (from deposit TX):', creationBlockNumbers);
-        } else {
-            // No deposit TX known yet — scan from current block.
-            // Any shield done in this session will be at a future block, so no history needed.
-            // If user later presses Reset scan with an existing deposit, the panel must supply startBlock.
-            // RAILGUN V2 deploy blocks are the absolute safety floor (never scan below these):
-            //   Mainnet ~17,200,000 (May 2023), Sepolia ~3,000,000, Polygon ~44M, BSC ~28M, Arb ~100M
-            const RAILGUN_V2_FLOOR: Partial<Record<string, number>> = {
-                [NetworkName.Ethereum]:        17_200_000,
-                [NetworkName.EthereumSepolia]:  3_000_000,
-                [NetworkName.Polygon]:         44_000_000,
-                [NetworkName.BNBChain]:        28_000_000,
-                [NetworkName.Arbitrum]:       100_000_000,
-            };
-            try {
-                const { JsonRpcProvider } = await import("ethers");
-                const rpcUrl = FALLBACK_RPC[chainId!];
-                const provider = rpcUrl ? new JsonRpcProvider(rpcUrl) : null;
-                const currentBlock = provider ? await provider.getBlockNumber() : null;
-                const floor = RAILGUN_V2_FLOOR[networkName] ?? 0;
-                const block = currentBlock !== null ? Math.max(floor, currentBlock) : floor;
-                creationBlockNumbers = { [networkName]: block };
-                console.log('[QryptShield] New wallet creationBlock (current block):', creationBlockNumbers);
-            } catch {
-                const floor = RAILGUN_V2_FLOOR[networkName];
-                if (floor !== undefined) {
-                    creationBlockNumbers = { [networkName]: floor };
-                    console.warn('[QryptShield] Could not get currentBlock, using V2 floor:', creationBlockNumbers);
-                }
-                // else null → full genesis scan
-            }
+    const rpcUrl = chainId ? FALLBACK_RPC[chainId] : undefined;
+    if (networkName && rpcUrl) {
+        try {
+            const { JsonRpcProvider } = await import("ethers");
+            const provider = new JsonRpcProvider(rpcUrl);
+            const currentBlock = await provider.getBlockNumber();
+            creationBlockNumbers = { [networkName]: Math.max(0, currentBlock - 1_000) };
+        } catch {
+            // Continue without block range optimization
         }
     }
 
@@ -766,17 +738,14 @@ export async function waitForRailgunBalance(
     }
 
     // Fast path - balance already spendable (resume scenario)
-    console.log('[QryptShield] waitForRailgunBalance start | walletID:', walletID.slice(0,8), '| token:', tokenAddress?.slice(0,10), '| chain:', chainId);
     if (tokenAddress && networkName) {
         const immediate = await checkRailgunBalance(walletID, networkName, tokenAddress, true);
-        console.log('[QryptShield] Fast path spendable balance:', immediate.toString());
         if (immediate > 0n) {
             onProgress?.("Pool balance confirmed: proceeding to proof.");
             return;
         }
         // Check non-spendable: UTXO is committed but POI not yet validated.
         const anyBucket = await checkRailgunBalance(walletID, networkName, tokenAddress, false);
-        console.log('[QryptShield] Fast path any-bucket balance:', anyBucket.toString());
         if (anyBucket > 0n) {
             committedAt = Date.now();
             onProgress?.("Deposit found in pool (not yet Spendable). Waiting for POI validation...");
@@ -788,8 +757,8 @@ export async function waitForRailgunBalance(
     // visit the engine resumes from that block and only new events are processed.
     // Return visits complete in seconds. Users should close and come back.
     const baseMsg = IS_MAINNET
-        ? "Waiting for RAILGUN pool sync (open browser console for details)..."
-        : "Waiting for RAILGUN pool sync...";
+        ? "Building privacy index (first-time setup: 1-3 hours, saved to browser storage)..."
+        : "Building privacy index...";
     onProgress?.(baseMsg);
 
     return new Promise<void>((resolve, reject) => {
@@ -867,8 +836,7 @@ export async function waitForRailgunBalance(
 
             // Check ALL buckets (ShieldPending, Spendable, MissingInternalPOI, etc.)
             const committed = await checkRailgunBalance(walletID, networkName, tokenAddress, false);
-            console.log('[QryptShield] Balance callback | any-bucket:', committed.toString(), '| elapsed:', elapsed());
-            if (committed === 0n) { console.log('[QryptShield] UTXO not found in any bucket yet'); return; } // not in any bucket yet
+            if (committed === 0n) return; // not in any bucket yet
 
             // Record when we first found it
             if (committedAt === null) {
@@ -878,7 +846,6 @@ export async function waitForRailgunBalance(
 
             // Check Spendable bucket
             const spendable = await checkRailgunBalance(walletID, networkName, tokenAddress, true);
-            console.log('[QryptShield] Spendable balance:', spendable.toString());
             if (spendable > 0n) {
                 cleanup();
                 onProgress?.("Pool balance spendable: proceeding to proof.");
