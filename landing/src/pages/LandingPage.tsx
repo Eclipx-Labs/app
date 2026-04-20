@@ -300,7 +300,6 @@ function QryptCA() {
         <img src={logoDexscreener} alt="Dexscreener" width={13} height={13} style={{
           objectFit: "contain",
           borderRadius: "50%",
-          filter: "brightness(0) saturate(100%) invert(62%) sepia(20%) saturate(500%) hue-rotate(185deg) brightness(95%)",
         }} />
       </a>
     </div>
