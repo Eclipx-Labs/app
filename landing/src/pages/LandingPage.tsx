@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import appIcon from "@/assets/icon-app.png";
 import logoRailgun from "@/assets/logo-railgun.png";
 import logoEthereum from "@/assets/logo-ethereum.png";
@@ -235,6 +235,60 @@ function ScatteredIcons() {
           {item.t === 'k' && <KeySmall  s={item.s} />}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── $QRYPT Contract Address strip ───────────────────────────────────────────
+const QRYPT_CA = "0xcbB8299b383C8FB98A7FCcb5F2f96B14A0E8B829";
+function QryptCA() {
+  const [copied, setCopied] = useState(false);
+  const short = QRYPT_CA.slice(0, 6) + "..." + QRYPT_CA.slice(-4);
+  const copy = () => {
+    navigator.clipboard.writeText(QRYPT_CA).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  };
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      marginTop: 14,
+      padding: "7px 12px",
+      borderRadius: 8,
+      background: "rgba(245,158,11,0.06)",
+      border: "1px solid rgba(245,158,11,0.18)",
+      width: "fit-content",
+      maxWidth: "100%",
+    }}>
+      <span style={{
+        fontSize: 9, fontWeight: 700, color: "#F59E0B",
+        letterSpacing: "0.14em", textTransform: "uppercase",
+        fontFamily: "'Courier New', monospace", flexShrink: 0,
+      }}>$QRYPT</span>
+      <span style={{ color: "rgba(180,210,255,0.18)", fontSize: 10, flexShrink: 0 }}>|</span>
+      <span style={{
+        fontSize: 10, color: "rgba(180,210,255,0.55)",
+        fontFamily: "'Courier New', monospace",
+        letterSpacing: "0.04em", flexShrink: 0,
+      }} title={QRYPT_CA}>{short}</span>
+      <button onClick={copy} title="Copy CA" style={{
+        background: "none", border: "none", cursor: "pointer",
+        padding: "2px 4px", borderRadius: 4, flexShrink: 0,
+        color: copied ? "#4ade80" : "rgba(180,210,255,0.4)",
+        transition: "color 0.2s",
+      }}>
+        {copied
+          ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        }
+      </button>
+      <a href={`https://etherscan.io/token/${QRYPT_CA}`} target="_blank" rel="noopener noreferrer" style={{
+        fontSize: 9, fontWeight: 600, color: "rgba(180,210,255,0.4)",
+        textDecoration: "none", letterSpacing: "0.06em",
+        textTransform: "uppercase", flexShrink: 0,
+        fontFamily: "'Courier New', monospace",
+      }}>Etherscan &#8599;</a>
     </div>
   );
 }
@@ -548,6 +602,9 @@ export default function LandingPage() {
               <p className="lp-desc">
                 Qryptum is a decentralized security protocol on Ethereum that protects ERC-20 assets through user-owned vaults and cryptographic proofs. It enables private, trustless transfers using zero-knowledge and offline signing, without relying on custodians or centralized infrastructure.
               </p>
+
+              {/* $QRYPT CA */}
+              <QryptCA />
             </div>
 
             {/* CARDS BLOCK */}
