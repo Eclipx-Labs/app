@@ -587,9 +587,9 @@ function DetailSection() {
 
 // ─── Card Carousel (Desktop) ──────────────────────────────────────────────────
 const CAROUSEL_CARDS = [
+  { label: "1 WETH Pool", color: "#f59e0b", render: () => <WethCard /> },
   { label: "Classic 97%", color: "#7c3aed", render: () => <ClassicCard /> },
   { label: "Experiment 88%", color: "#06b6d4", render: () => <ExperimentCard /> },
-  { label: "1 WETH Pool", color: "#f59e0b", render: () => <WethCard /> },
 ];
 
 function CardCarousel() {
@@ -649,9 +649,9 @@ function CardCarousel() {
 function MobileStackView() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <WethCard />
       <ClassicCard />
       <ExperimentCard />
-      <WethCard />
     </div>
   );
 }
