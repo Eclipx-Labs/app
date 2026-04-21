@@ -133,7 +133,10 @@ export default function QryptShieldPanel({
     const [syncTimedOut, setSyncTimedOut] = useState(false);
     const [syncProgress, setSyncProgress] = useState(0);
     const [utxoInPool, setUtxoInPool] = useState(false);
-    const SYNC_USER_TIMEOUT_MS = 3 * 60 * 1_000; // 3 min - fail fast, DB resumes
+    // Mainnet: Subsquid lags ~22 min before POI aggregator sees the shield.
+    // Show "stuck" banner only after 10 min on mainnet (not 3) to avoid
+    // prematurely signaling a problem during normal Subsquid catch-up window.
+    const SYNC_USER_TIMEOUT_MS = chainId === 1 ? 10 * 60 * 1_000 : 3 * 60 * 1_000;
 
     useEffect(() => {
         onLockChange?.(phase === "running");
