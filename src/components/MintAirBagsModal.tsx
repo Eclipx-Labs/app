@@ -4,7 +4,7 @@ import { useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 
 import { EyeIcon, EyeOffIcon, Loader2Icon, ArrowUpIcon, RefreshCwIcon, CheckCircle2Icon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { peekNextProof, consumeProofAtPosition } from "@/lib/password";
-import { PERSONAL_VAULT_V6_ABI } from "@/lib/abi";
+import { PERSONAL_VAULT_V6_ABI, PERSONAL_VAULT_MAINNET_ABI } from "@/lib/abi";
 import { useTxStatus } from "@/lib/txStatusContext";
 import { recordTransaction } from "@/lib/api";
 
@@ -99,14 +99,21 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
         }
         pendingPositionRef.current = peeked.position;
         fundAmountRef.current = fundAmount;
-        writeFund({
-            address: vaultAddress,
-            abi: PERSONAL_VAULT_V6_ABI,
-            functionName: "fundAirBags",
-            args: [token.tokenAddress as `0x${string}`, parsed, peeked.proof],
-        }, {
-            onSuccess: (hash) => pushTx(hash, `Minting ${fundAmount} ${token.tokenSymbol} to air budget`),
-        });
+        if (chainId === 1) {
+            writeFund({
+                address: vaultAddress,
+                abi: PERSONAL_VAULT_MAINNET_ABI,
+                functionName: "mintOffToken",
+                args: [token.tokenAddress as `0x${string}`, parsed, peeked.proof],
+            }, { onSuccess: (hash) => pushTx(hash, `Minting ${fundAmount} ${token.tokenSymbol} to air budget`) });
+        } else {
+            writeFund({
+                address: vaultAddress,
+                abi: PERSONAL_VAULT_V6_ABI,
+                functionName: "fundAirBags",
+                args: [token.tokenAddress as `0x${string}`, parsed, peeked.proof],
+            }, { onSuccess: (hash) => pushTx(hash, `Minting ${fundAmount} ${token.tokenSymbol} to air budget`) });
+        }
     }, [fundAmount, vaultProof, token, shieldedBalance, walletAddress, vaultAddress, writeFund, toast, pushTx]);
 
     const handleReclaim = useCallback(async () => {
@@ -117,14 +124,21 @@ export default function MintAirBagsModal({ token, airBudget, shieldedBalance, wa
             toast({ title: "Chain error", description: err.message, variant: "destructive" }); return;
         }
         pendingPositionRef.current = peeked.position;
-        writeReclaim({
-            address: vaultAddress,
-            abi: PERSONAL_VAULT_V6_ABI,
-            functionName: "reclaimAirBags",
-            args: [token.tokenAddress as `0x${string}`, peeked.proof],
-        }, {
-            onSuccess: (hash) => pushTx(hash, `Returning off${token.tokenSymbol} to shielded balance`),
-        });
+        if (chainId === 1) {
+            writeReclaim({
+                address: vaultAddress,
+                abi: PERSONAL_VAULT_MAINNET_ABI,
+                functionName: "reclaimOffToken",
+                args: [token.tokenAddress as `0x${string}`, peeked.proof],
+            }, { onSuccess: (hash) => pushTx(hash, `Returning off${token.tokenSymbol} to shielded balance`) });
+        } else {
+            writeReclaim({
+                address: vaultAddress,
+                abi: PERSONAL_VAULT_V6_ABI,
+                functionName: "reclaimAirBags",
+                args: [token.tokenAddress as `0x${string}`, peeked.proof],
+            }, { onSuccess: (hash) => pushTx(hash, `Returning off${token.tokenSymbol} to shielded balance`) });
+        }
     }, [vaultProof, airBudget, walletAddress, vaultAddress, writeReclaim, token, toast, pushTx]);
 
     const isSuccess = fundSuccess || reclaimSuccess;
