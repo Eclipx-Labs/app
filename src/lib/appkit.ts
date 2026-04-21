@@ -4,14 +4,23 @@ import { injected } from "wagmi/connectors";
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 
-const _apiBase = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
-const _railwayBase = _apiBase ? `${_apiBase}/api` : null;
+// Mirror getApiBase() from railgun.ts - strip any trailing /api first, then re-add.
+// Prevents double /api/api path when VITE_API_BASE already contains /api.
+function getApiBase(): string {
+    const rawBase = (import.meta.env.VITE_API_BASE as string | undefined)
+        ?.replace(/\/api\/?$/, "")
+        ?.replace(/\/$/, "");
+    if (rawBase) return `${rawBase}/api`;
+    if (import.meta.env.DEV) {
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        return `${origin}/api`;
+    }
+    return "https://qryptum-api.up.railway.app/api";
+}
 
+// All chains route through Railway dRPC proxy - no public RPC fallbacks.
 function rpcUrl(chainId: number): string {
-    if (_railwayBase) return `${_railwayBase}/rpc/${chainId}`;
-    return chainId === 1
-        ? "https://ethereum-rpc.publicnode.com"
-        : "https://ethereum-sepolia-rpc.publicnode.com";
+    return `${getApiBase()}/rpc/${chainId}`;
 }
 
 const _defaultConfig = createConfig({
