@@ -396,6 +396,18 @@ export default function DashboardPage() {
         return () => window.removeEventListener("keydown", onKey);
     }, [closeModal]);
 
+    // Pre-start Railgun merkle tree scan as soon as wallet connects and chain is supported.
+    // This runs the scan in background before the user navigates to QryptShield,
+    // so the index is already partially or fully built when they initiate a transfer.
+    useEffect(() => {
+        const RAILGUN_CHAINS = [1, 11155111];
+        if (!isConnected || !chainId || !RAILGUN_CHAINS.includes(chainId)) return;
+        import("@/lib/railgun").then(({ ensureRailgunEngine, loadRailgunProvider }) => {
+            ensureRailgunEngine().catch(() => {});
+            loadRailgunProvider(chainId).catch(() => {});
+        });
+    }, [isConnected, chainId]);
+
 
     const copyAddress = () => {
         if (address) { navigator.clipboard.writeText(address); setCopied(true); setTimeout(() => setCopied(false), 2000); }
