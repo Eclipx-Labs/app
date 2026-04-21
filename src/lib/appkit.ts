@@ -4,12 +4,22 @@ import { injected } from "wagmi/connectors";
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 
+const _apiBase = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, "");
+const _railwayBase = _apiBase ? `${_apiBase}/api` : null;
+
+function rpcUrl(chainId: number): string {
+    if (_railwayBase) return `${_railwayBase}/rpc/${chainId}`;
+    return chainId === 1
+        ? "https://ethereum-rpc.publicnode.com"
+        : "https://ethereum-sepolia-rpc.publicnode.com";
+}
+
 const _defaultConfig = createConfig({
     chains: [sepolia, mainnet],
     connectors: [injected()],
     transports: {
-        [sepolia.id]: http("https://ethereum-sepolia-rpc.publicnode.com"),
-        [mainnet.id]: http("https://ethereum-rpc.publicnode.com"),
+        [sepolia.id]: http(rpcUrl(sepolia.id)),
+        [mainnet.id]: http(rpcUrl(mainnet.id)),
     },
 });
 
@@ -24,8 +34,8 @@ export async function initAppKit(projectId: string): Promise<void> {
             networks,
             projectId,
             transports: {
-                [sepolia.id]: http("https://ethereum-sepolia-rpc.publicnode.com"),
-                [mainnet.id]: http("https://ethereum-rpc.publicnode.com"),
+                [sepolia.id]: http(rpcUrl(sepolia.id)),
+                [mainnet.id]: http(rpcUrl(mainnet.id)),
             },
         });
         const modal = createAppKit({
