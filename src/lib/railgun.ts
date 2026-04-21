@@ -725,8 +725,12 @@ export async function waitForRailgunBalance(
     // Testnet traffic is sparse so the aggregator approves shields much faster.
     const IS_MAINNET = chainId === 1;
     const HARD_TIMEOUT_MS = IS_MAINNET ? 90 * 60 * 1_000 : 15 * 60 * 1_000;
-    // On mainnet incremental scans need more time before escalating to full rescan.
-    const FULL_RESCAN_AFTER_MS = IS_MAINNET ? 8 * 60 * 1_000 : 2 * 60 * 1_000;
+    // Rescan interval once UTXO is committed but not Spendable.
+    // Periodic rescan is required: refreshBalances does NOT re-query the POI node
+    // for existing MissingInternalPOI UTXOs. Only rescanFullUTXOMerkletreesAndWallets
+    // forces a fresh POI status check. We repeat it every RESCAN_INTERVAL_MS so we
+    // pick up POI validation within minutes rather than waiting forever.
+    const RESCAN_INTERVAL_MS = IS_MAINNET ? 3 * 60 * 1_000 : 90 * 1_000;
 
     const startedAt = Date.now();
     let committedAt: number | null = null;
@@ -790,23 +794,36 @@ export async function waitForRailgunBalance(
         wpSync().refreshBalances(chain, [walletID]).catch(() => { /* best effort */ });
 
         // Re-trigger scan every 20 s.
-        // Escalation: after FULL_RESCAN_AFTER_MS committed, run full UTXO+TXID rescan.
-        // We NEVER force-proceed to ZK proof - MissingInternalPOI means the aggregator
-        // has not validated the shield yet. Proceeding early causes proof failure.
-        let fullRescanTriggered = false;
+        // Once UTXO is committed but not Spendable, periodic full rescan is needed:
+        // refreshBalances alone does NOT re-query the POI node for existing
+        // MissingInternalPOI UTXOs. We use rescanFullUTXOMerkletreesAndWallets
+        // every RESCAN_INTERVAL_MS so POI validation is detected within minutes.
+        // Direct spendable check in ticker catches validations that do not fire
+        // a balance update event (belt-and-suspenders).
+        let lastRescanAt = 0;
         const ticker = setInterval(async () => {
             const pkg = wpSync();
-            const sinceCommit = committedAt !== null ? Date.now() - committedAt : 0;
+            const nowMs = Date.now();
 
-            if (
-                committedAt !== null &&
-                !fullRescanTriggered &&
-                sinceCommit > FULL_RESCAN_AFTER_MS
-            ) {
-                fullRescanTriggered = true;
+            // Direct spendable poll - catches POI validation without waiting for
+            // balance update event (which may not fire after aggregator validates).
+            if (committedAt !== null && tokenAddress && networkName) {
+                try {
+                    const spendable = await checkRailgunBalance(walletID, networkName, tokenAddress, true);
+                    if (spendable > 0n) {
+                        cleanup();
+                        onProgress?.("Pool balance spendable: proceeding to proof.");
+                        resolve();
+                        return;
+                    }
+                } catch { /* best effort */ }
+            }
+
+            if (committedAt !== null && nowMs - lastRescanAt > RESCAN_INTERVAL_MS) {
+                lastRescanAt = nowMs;
                 const rescanMsg = IS_MAINNET
-                    ? "POI validation pending - triggering deep index rescan (normal on mainnet)..."
-                    : "UTXO stuck in ShieldPending: triggering full index rescan...";
+                    ? "Checking POI validation status (rescan)..."
+                    : "Re-scanning for UTXO maturity...";
                 onProgress?.(rescanMsg);
                 pkg.rescanFullUTXOMerkletreesAndWallets(chain, [walletID])
                     .catch(() => { /* best effort */ });
@@ -865,7 +882,7 @@ export async function waitForRailgunBalance(
                 ? `${Math.floor(sinceCommitSec / 60)}m ${sinceCommitSec % 60}s`
                 : `${sinceCommitSec}s`;
             const maturingMsg = IS_MAINNET
-                ? `Deposit in pool - awaiting POI validation (${sinceCommitDisplay} elapsed, expected 30-60 min). (${elapsed()})`
+                ? `Deposit in pool - awaiting POI validation (${sinceCommitDisplay} elapsed, usually 5-60 min on mainnet). (${elapsed()})`
                 : `UTXO found in pool (maturing... ${sinceCommitDisplay}). Waiting for Spendable. (${elapsed()})`;
             onProgress?.(maturingMsg);
         });
