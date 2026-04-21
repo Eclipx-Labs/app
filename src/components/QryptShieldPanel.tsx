@@ -433,9 +433,12 @@ export default function QryptShieldPanel({
             // and typically complete in seconds. First visit: 1-3 hours.
             stepActive("sync", "Building privacy index...");
             {
-                const SYNC_TIMED_OUT = Symbol("SYNC_TIMED_OUT");
-                // Subscribe to UTXO scan progress for real-time % display
+                // Subscribe to UTXO scan progress for real-time % display.
+                // Scanning TXID tree is background indexing for sends - not blocking
+                // receive POI validation. Always suppress it here so step 3 shows
+                // meaningful status instead of a misleading % counter.
                 const unsubScanProgress = subscribeScanProgress((msg) => {
+                    if (msg.startsWith("Scanning TXID tree")) return;
                     const pctMatch = msg.match(/(\d+)%/);
                     if (pctMatch) setSyncProgress(parseInt(pctMatch[1], 10));
                     updateStep("sync", { detail: msg });
@@ -447,22 +450,33 @@ export default function QryptShieldPanel({
                     }
                     updateStep("sync", { detail: msg });
                 };
-                const syncRace = await Promise.race([
-                    waitForRailgunBalance(
-                        railgunWalletID,
-                        chainId,
-                        balanceProgressHandler,
-                        token.tokenAddress,
-                    ).then(() => null).finally(() => unsubScanProgress()),
+                // Start balance wait - runs until UTXO is spendable (POI validated).
+                const balanceWait = waitForRailgunBalance(
+                    railgunWalletID,
+                    chainId,
+                    balanceProgressHandler,
+                    token.tokenAddress,
+                );
+                // Race with timeout purely for UX: show "taking longer" banner so
+                // the user knows they can minimize and come back.
+                // CRITICAL FIX: do NOT return after timeout. Returning early was the
+                // root cause of many transfers not completing - steps 4 and 5 never
+                // executed because the function exited before POI validation finished.
+                const SYNC_TIMED_OUT = Symbol("SYNC_TIMED_OUT");
+                const firstResult = await Promise.race([
+                    balanceWait.then(() => null as null),
                     new Promise<typeof SYNC_TIMED_OUT>(res =>
                         setTimeout(() => res(SYNC_TIMED_OUT), SYNC_USER_TIMEOUT_MS)
                     ),
                 ]);
-                if (syncRace === SYNC_TIMED_OUT) {
-                    unsubScanProgress();
+                if (firstResult === SYNC_TIMED_OUT) {
+                    // Banner shown - user can minimize. Flow stays alive and keeps
+                    // polling POI aggregator until balance becomes spendable.
                     setSyncTimedOut(true);
-                    return;
+                    await balanceWait;
+                    setSyncTimedOut(false);
                 }
+                unsubScanProgress();
             }
             stepDone("sync");
 
