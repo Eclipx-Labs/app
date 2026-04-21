@@ -785,8 +785,13 @@ export async function waitForRailgunBalance(
             }
         }, HARD_TIMEOUT_MS);
 
-        // Show real scan % from the global scan progress bus
+        // Show real scan % from the global scan progress bus.
+        // Once deposit is committed (in pool, awaiting POI), the TXID tree scan
+        // is background indexing needed for sends - it does NOT block receive
+        // POI validation. Suppress those messages so users see meaningful status
+        // instead of "Scanning TXID tree... 24%" which implies they're stuck.
         const unsubScan = subscribeScanProgress((msg) => {
+            if (committedAt !== null && msg.startsWith("Scanning TXID tree")) return;
             onProgress?.(msg + ` (${elapsed()})`);
         });
 
@@ -800,7 +805,8 @@ export async function waitForRailgunBalance(
         // every RESCAN_INTERVAL_MS so POI validation is detected within minutes.
         // Direct spendable check in ticker catches validations that do not fire
         // a balance update event (belt-and-suspenders).
-        let lastRescanAt = 0;
+        let lastRescanAt   = 0;
+        let lastPoiRefreshAt = 0;
         const ticker = setInterval(async () => {
             const pkg = wpSync();
             const nowMs = Date.now();
@@ -829,6 +835,25 @@ export async function waitForRailgunBalance(
                     .catch(() => { /* best effort */ });
             } else {
                 pkg.refreshBalances(chain, [walletID]).catch(() => { /* best effort */ });
+            }
+
+            // Actively query the POI aggregator for receive POI status.
+            // refreshReceivePOIsForWallet() hits the aggregator JSON-RPC and tells
+            // the SDK to re-evaluate POI status for our received UTXOs right now.
+            // Without this call the wallet only detects validation passively when a
+            // balance event fires - which can miss the aggregator update for many
+            // scan cycles. This is the root cause of 29+ min apparent "stuck" waits.
+            const REFRESH_POI_INTERVAL = IS_MAINNET ? 2 * 60 * 1_000 : 60 * 1_000;
+            if (networkName && nowMs - lastPoiRefreshAt > REFRESH_POI_INTERVAL) {
+                lastPoiRefreshAt = nowMs;
+                try {
+                    const { refreshReceivePOIsForWallet } = await wp();
+                    await refreshReceivePOIsForWallet(
+                        TXIDVersion.V2_PoseidonMerkle,
+                        networkName,
+                        walletID,
+                    );
+                } catch { /* best effort - aggregator may be briefly unavailable */ }
             }
         }, 20_000);
 
