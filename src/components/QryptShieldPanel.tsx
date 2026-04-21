@@ -570,7 +570,7 @@ export default function QryptShieldPanel({
                             <>
                                 <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: "#a78bfa" }}>
                                     Privacy index building in background
-                                    {syncProgress > 0 && <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.5)" }}> — {syncProgress}% complete</span>}
+                                    {syncProgress > 0 && <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.5)" }}> {syncProgress}% complete</span>}
                                 </p>
                                 <p style={{ margin: "0 0 4px", fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
                                     Your tokens are safe in the Railgun pool. This panel shielded them successfully.
@@ -586,10 +586,7 @@ export default function QryptShieldPanel({
                         <button
                             onClick={() => {
                                 setSyncTimedOut(false);
-                                setSyncProgress(0);
-                                setUtxoInPool(false);
                                 setPhase("form");
-                                setSteps(INITIAL_STEPS.map(s => ({ ...s })));
                             }}
                             style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", background: "none", border: "1px solid rgba(139,92,246,0.4)", borderRadius: 8, cursor: "pointer", padding: "6px 16px" }}
                         >
