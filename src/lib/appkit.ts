@@ -18,8 +18,10 @@ function getApiBase(): string {
     return "https://qryptum-api.up.railway.app/api";
 }
 
-// All chains route through Railway dRPC proxy - no public RPC fallbacks.
+// Route through Railway dRPC proxy - no public RPC fallbacks.
+// Mainnet (1) uses /api/rpc/drpc (DRPC_API_KEY). Sepolia uses /api/rpc/11155111 (DRPC_SEPOLIA_URL).
 function rpcUrl(chainId: number): string {
+    if (chainId === 1) return `${getApiBase()}/rpc/drpc`;
     return `${getApiBase()}/rpc/${chainId}`;
 }
 
