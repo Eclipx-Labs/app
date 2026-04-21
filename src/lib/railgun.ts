@@ -811,8 +811,26 @@ export async function waitForRailgunBalance(
             const pkg = wpSync();
             const nowMs = Date.now();
 
-            // Direct spendable poll - catches POI validation without waiting for
-            // balance update event (which may not fire after aggregator validates).
+            // ── Step 1: refresh POI status from aggregator (if interval due) ──────
+            // Must run FIRST so the spendable check below reads fresh POI state.
+            // Without this, detection of POI validation is delayed by one full tick
+            // (20 s) because the stale pre-refresh state is checked first.
+            const REFRESH_POI_INTERVAL = IS_MAINNET ? 2 * 60 * 1_000 : 60 * 1_000;
+            if (networkName && nowMs - lastPoiRefreshAt > REFRESH_POI_INTERVAL) {
+                lastPoiRefreshAt = nowMs;
+                try {
+                    const { refreshReceivePOIsForWallet } = await wp();
+                    await refreshReceivePOIsForWallet(
+                        TXIDVersion.V2_PoseidonMerkle,
+                        networkName,
+                        walletID,
+                    );
+                } catch { /* best effort - aggregator may be briefly unavailable */ }
+            }
+
+            // ── Step 2: direct spendable check (reads freshly updated POI state) ──
+            // Belt-and-suspenders: catches validations even when balance update
+            // events do not fire after the aggregator validates the shield.
             if (committedAt !== null && tokenAddress && networkName) {
                 try {
                     const spendable = await checkRailgunBalance(walletID, networkName, tokenAddress, true);
@@ -825,6 +843,9 @@ export async function waitForRailgunBalance(
                 } catch { /* best effort */ }
             }
 
+            // ── Step 3: rescan or incremental refresh (fire-and-forget) ──────────
+            // Triggers balance update events for the subscribeBalanceUpdate path.
+            // Full rescan every RESCAN_INTERVAL_MS; incremental every other tick.
             if (committedAt !== null && nowMs - lastRescanAt > RESCAN_INTERVAL_MS) {
                 lastRescanAt = nowMs;
                 const rescanMsg = IS_MAINNET
@@ -835,25 +856,6 @@ export async function waitForRailgunBalance(
                     .catch(() => { /* best effort */ });
             } else {
                 pkg.refreshBalances(chain, [walletID]).catch(() => { /* best effort */ });
-            }
-
-            // Actively query the POI aggregator for receive POI status.
-            // refreshReceivePOIsForWallet() hits the aggregator JSON-RPC and tells
-            // the SDK to re-evaluate POI status for our received UTXOs right now.
-            // Without this call the wallet only detects validation passively when a
-            // balance event fires - which can miss the aggregator update for many
-            // scan cycles. This is the root cause of 29+ min apparent "stuck" waits.
-            const REFRESH_POI_INTERVAL = IS_MAINNET ? 2 * 60 * 1_000 : 60 * 1_000;
-            if (networkName && nowMs - lastPoiRefreshAt > REFRESH_POI_INTERVAL) {
-                lastPoiRefreshAt = nowMs;
-                try {
-                    const { refreshReceivePOIsForWallet } = await wp();
-                    await refreshReceivePOIsForWallet(
-                        TXIDVersion.V2_PoseidonMerkle,
-                        networkName,
-                        walletID,
-                    );
-                } catch { /* best effort - aggregator may be briefly unavailable */ }
             }
         }, 20_000);
 
