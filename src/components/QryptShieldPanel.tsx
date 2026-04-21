@@ -78,6 +78,7 @@ export default function QryptShieldPanel({
     vaultVersion = "v5",
     onComplete,
     onLockChange,
+    onMinimize,
 }: QryptShieldPanelProps) {
     const { data: walletClient } = useWalletClient();
     const publicClient = usePublicClient({ chainId });
