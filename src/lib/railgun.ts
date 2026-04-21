@@ -57,7 +57,7 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
     1: {
         chainId: 1,
         providers: [
-            // dRPC (via Railway /api/rpc/drpc proxy) injected at priority 1 in loadRailgunProvider.
+            // dRPC (via Railway /api/rpc/1 → MAINNET_RPC_URL) injected at priority 1 in loadRailgunProvider.
             // No static public fallbacks - all mainnet traffic goes through dRPC.
         ],
     },
@@ -94,7 +94,7 @@ const NETWORK_PROVIDERS: Partial<Record<number, FallbackProviderJsonConfig>> = {
 
 // Fallback single-URL for chains without a dedicated Railway proxy route.
 // Mainnet (1) and Sepolia (11155111) are intentionally omitted - they use
-// getDrpcProxyUrl() / getSepoliaRpcProxyUrl() so keys stay server-side.
+// getMainnetRpcProxyUrl() / getSepoliaRpcProxyUrl() so keys stay server-side.
 const FALLBACK_RPC: Partial<Record<number, string>> = {
     137: "https://polygon.llamarpc.com",
     56: "https://binance.llamarpc.com",
@@ -131,11 +131,6 @@ function getApiBase(): string {
 /** POST /api/rpc/1 - server-side proxy to private MAINNET_RPC_URL. */
 function getMainnetRpcProxyUrl(): string {
     return `${getApiBase()}/rpc/1`;
-}
-
-/** POST /api/rpc/drpc - server-side proxy to dRPC paid endpoint (DRPC_API_KEY on Railway). */
-function getDrpcProxyUrl(): string {
-    return `${getApiBase()}/rpc/drpc`;
 }
 
 /** POST /api/rpc/11155111 - server-side proxy to DRPC_SEPOLIA_URL. */
@@ -427,11 +422,11 @@ export async function loadRailgunProvider(chainId: number, onProgress?: (msg: st
     const baseConfig = NETWORK_PROVIDERS[chainId];
     if (!baseConfig) throw new Error(`No RPC configured for chainId ${chainId}.`);
 
-    // Inject private RPC proxy as priority 1 (key stays server-side, never in browser bundle).
-    // - Sepolia (11155111): dRPC Sepolia via /api/rpc/11155111 (DRPC_SEPOLIA_URL)
-    // - Mainnet (1): dRPC via /api/rpc/drpc (DRPC_API_KEY on Railway)
+    // Inject dRPC proxy as priority 1 (key stays server-side, never in browser bundle).
+    // - Mainnet (1):        /api/rpc/1         → MAINNET_RPC_URL on Railway (dRPC)
+    // - Sepolia (11155111): /api/rpc/11155111   → DRPC_SEPOLIA_URL on Railway (dRPC)
     // Static fallbacks in NETWORK_PROVIDERS start at priority 2.
-    const privateProxyUrl = chainId === 11155111 ? getSepoliaRpcProxyUrl() : getDrpcProxyUrl();
+    const privateProxyUrl = chainId === 11155111 ? getSepoliaRpcProxyUrl() : getMainnetRpcProxyUrl();
     const config: typeof baseConfig = {
         ...baseConfig,
         providers: [
@@ -498,7 +493,7 @@ export async function getOrCreateRailgunWallet(
     let creationBlockNumbers: Record<string, number> | null = null;
     const networkName = chainId ? RAILGUN_CHAIN_MAP[chainId] : undefined;
     // Use dRPC proxy for mainnet/sepolia; public fallback only for other chains.
-    const rpcUrl = chainId === 1            ? getDrpcProxyUrl()
+    const rpcUrl = chainId === 1            ? getMainnetRpcProxyUrl()
                  : chainId === 11155111     ? getSepoliaRpcProxyUrl()
                  : chainId                  ? FALLBACK_RPC[chainId]
                  : undefined;
