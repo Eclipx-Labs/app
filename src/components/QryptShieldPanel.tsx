@@ -513,8 +513,22 @@ export default function QryptShieldPanel({
             const deliverHash = broadcastResult.txHash as `0x${string}`;
             updateStep("deliver", { detail: `Relayed via QryptumSigner - sender address hidden.`, txHash: deliverHash });
 
-            const deliverReceipt = await publicClient.waitForTransactionReceipt({ hash: deliverHash });
-            if (deliverReceipt.status === "reverted") throw new Error(`Unshield transaction reverted on-chain (Invalid Snark Proof or gas too low). TX: ${deliverHash}`);
+            // Wait up to 5 minutes for receipt. On mainnet, blocks take ~12s but mempool
+            // congestion can delay inclusion. If viem times out, the TX is still in the
+            // mempool - treat as submitted and let the user track via the Etherscan link.
+            let deliverReceipt: Awaited<ReturnType<typeof publicClient.waitForTransactionReceipt>> | null = null;
+            try {
+                deliverReceipt = await publicClient.waitForTransactionReceipt({
+                    hash: deliverHash,
+                    timeout: 300_000, // 5 minutes
+                });
+            } catch (receiptErr: unknown) {
+                const msg = receiptErr instanceof Error ? receiptErr.message : String(receiptErr);
+                const isTimeout = msg.toLowerCase().includes("timed out") || msg.toLowerCase().includes("timeout");
+                if (!isTimeout) throw receiptErr;
+                // TX in mempool - proceed as submitted, not failed
+            }
+            if (deliverReceipt?.status === "reverted") throw new Error(`Unshield transaction reverted on-chain (Invalid Snark Proof or gas too low). TX: ${deliverHash}`);
             stepDone("deliver", deliverHash);
 
             try {
